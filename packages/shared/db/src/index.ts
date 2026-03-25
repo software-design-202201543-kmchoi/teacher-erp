@@ -1,1 +1,1 @@
-export * from './models/Student';
+export * from './schemas/user.js';

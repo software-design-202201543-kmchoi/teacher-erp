@@ -1,0 +1,119 @@
+@startuml er_diagram
+' hide the spot
+hide circle
+skinparam linetype ortho
+
+entity "User (사용자)" as user {
+  * id : UUID
+  --
+  * role : Enum(교사, 학생, 학부모)
+  * name : String
+  * email : String
+  password : String
+}
+
+entity "Teacher (교사)" as teacher {
+  * user_id : UUID <<FK>>
+  --
+  subject : String
+}
+
+entity "Student (학생)" as student {
+  * user_id : UUID <<FK>>
+  --
+  grade_level : Int (학년)
+  class_num : Int (반)
+  student_num : Int (번호)
+}
+
+entity "Parent (학부모)" as parent {
+  * user_id : UUID <<FK>>
+  --
+  phone_number : String
+}
+
+entity "ParentStudent (학부모-학생 관계)" as parent_student {
+  * parent_id : UUID <<FK>>
+  * student_id : UUID <<FK>>
+  --
+  relation : String
+}
+
+entity "AcademicRecord (학생부)" as academic_record {
+  * id : UUID
+  * student_id : UUID <<FK>>
+  --
+  attendance_info : Text (출결)
+  special_notes : Text (특기사항)
+}
+
+entity "Subject (과목)" as subject {
+  * id : UUID
+  --
+  name : String
+}
+
+entity "Grade (성적)" as grade {
+  * id : UUID
+  * student_id : UUID <<FK>>
+  * subject_id : UUID <<FK>>
+  * teacher_id : UUID <<FK>>
+  --
+  term : String (학기)
+  score : Float
+  calculated_grade : String (등급)
+}
+
+entity "Feedback (피드백)" as feedback {
+  * id : UUID
+  * student_id : UUID <<FK>>
+  * teacher_id : UUID <<FK>>
+  --
+  type : Enum(성적, 행동, 출결, 태도)
+  content : Text
+  visibility : Enum(PRIVATE, STUDENT, PARENT, ALL)
+  created_at : DateTime
+}
+
+entity "CounselingRecord (상담 내역)" as counseling {
+  * id : UUID
+  * student_id : UUID <<FK>>
+  * teacher_id : UUID <<FK>>
+  --
+  counsel_date : Date
+  content : Text
+  next_plan : Text
+  is_shared : Boolean (기타 교사 공유 여부)
+  created_at : DateTime
+}
+
+entity "Notification (알림)" as notification {
+  * id : UUID
+  * user_id : UUID <<FK>>
+  --
+  title : String
+  content : Text
+  is_read : Boolean
+  created_at : DateTime
+}
+
+user ||--o| teacher
+user ||--o| student
+user ||--o| parent
+
+parent ||--o{ parent_student
+student ||--o{ parent_student
+
+student ||--|| academic_record
+student ||--o{ grade
+subject ||--o{ grade
+teacher ||--o{ grade
+
+student ||--o{ feedback
+teacher ||--o{ feedback
+
+student ||--o{ counseling
+teacher ||--o{ counseling
+
+user ||--o{ notification
+@enduml

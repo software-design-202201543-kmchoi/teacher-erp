@@ -5,6 +5,8 @@
   "type": "module",
   "main": "src/index.ts",
   "dependencies": {
-    "mongoose": "^8.3.0"
+    "mongoose": "^8.3.0",
+    "@casl/mongoose": "^8.0.1",
+    "@casl/ability": "^6.7.1"
   }
 }
