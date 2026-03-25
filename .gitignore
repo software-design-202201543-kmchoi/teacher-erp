@@ -1,2 +1,39 @@
-node_modules
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+
+# Dependencies
+node_modules/
 .pnpm-store
+
+# Environment Variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*
+
+# Build & Runtime
+dist/
+build/
+packages/*/dist/
+packages/*/build/
+*.tsbuildinfo
+
+# Coverage
+coverage/
+*.lcov
+.nyc_output
+
+# OS Related
+.DS_Store
+.DS_Store?
+
+
+
+credentials.json
+secret.key
