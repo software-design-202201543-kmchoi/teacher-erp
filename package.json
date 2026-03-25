@@ -1,0 +1,12 @@
+{
+  "name": "teacher-erp-monorepo",
+  "private": true,
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "pnpm --parallel -r run dev",
+    "build": "pnpm --recursive run build"
+  }
+}

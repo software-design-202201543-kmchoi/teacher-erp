@@ -1,0 +1,10 @@
+{
+  "name": "@teacher-erp/shared-db",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "dependencies": {
+    "mongoose": "^8.3.0"
+  }
+}

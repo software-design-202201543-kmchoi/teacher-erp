@@ -1,0 +1,27 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "Backend app for Teacher ERP",
+  "license": "ISC",
+  "author": "KyoungMin Choi",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "db-test": "tsx src/db-test.ts"
+  },
+  "dependencies": {
+    "@teacher-erp/shared-db": "workspace:*",
+    "@teacher-erp/shared-types": "workspace:*",
+    "@teacher-erp/shared-utils": "workspace:*",
+    "express": "^5.2.1",
+    "mongoose": "^8.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "mongodb-memory-server": "^9.1.8",
+    "nodemon": "^3.1.14",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.3"
+  }
+}
