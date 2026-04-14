@@ -1,0 +1,53 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "교사 (Teacher)" as T
+actor "학생 (Student)" as S
+actor "학부모 (Parent)" as P
+
+rectangle "학생 관리 시스템 (Teacher ERP)" {
+  usecase "성적 입력 및 수정" as UC_GradeManage
+  usecase "성적 조회 (과목별/레이더차트)" as UC_GradeView
+  usecase "학생부 유지보수\n(기본정보, 출결, 특기사항)" as UC_AcademicRecord
+  usecase "피드백 작성 및 범위 설정" as UC_WriteFeedback
+  usecase "교사 피드백 열람" as UC_ReadFeedback
+  usecase "상담 내역 기록 및 교사간 공유" as UC_Counseling
+  usecase "학생 기록 검색 및 필터링" as UC_Search
+  usecase "보고서 생성 (PDF/Excel)" as UC_Report
+  usecase "시스템 알림 수신" as UC_Notify
+}
+
+T --> UC_GradeManage
+T --> UC_AcademicRecord
+T --> UC_WriteFeedback
+T --> UC_Counseling
+T --> UC_Search
+T --> UC_Report
+T --> UC_Notify
+
+S --> UC_GradeView
+S --> UC_ReadFeedback
+S --> UC_Notify
+
+P --> UC_GradeView
+P --> UC_ReadFeedback
+P --> UC_Notify
+
+' Use case relationships to show flow
+UC_WriteFeedback ..> UC_ReadFeedback : "대상: 학생/학부모"
+UC_GradeManage ..> UC_GradeView : "데이터 제공"
+
+note top of T
+  가르침 / 평가 / 상담
+end note
+
+note top of S
+  성적 및 피드백 대상
+end note
+
+note top of P
+  자녀 정보 조회
+end note
+
+@enduml

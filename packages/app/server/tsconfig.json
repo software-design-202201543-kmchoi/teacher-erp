@@ -8,10 +8,10 @@
 
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "target": "esnext",
-    "types": [],
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "target": "es2022",
+    "types": ["node"],
     // For nodejs:
     // "lib": ["esnext"],
     // "types": ["node"],
@@ -19,8 +19,8 @@
 
     // Other Outputs
     "sourceMap": true,
-    "declaration": true,
-    "declarationMap": true,
+    "declaration": false,
+    "declarationMap": false,
 
     // Stricter Typechecking Options
     "noUncheckedIndexedAccess": true,
@@ -36,7 +36,6 @@
 
     // Recommended Options
     "strict": true,
-    "jsx": "react-jsx",
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
     "noUncheckedSideEffectImports": true,
