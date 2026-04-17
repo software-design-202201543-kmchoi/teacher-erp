@@ -30,10 +30,13 @@ app.get("/health", (_req, res) => {
 
 app.use("/api/auth", authRouter)
 
-app.listen(port, () => {
-  console.log(`Teacher ERP API listening on port ${port}`)
-})
-
-connectDB().catch((err) => {
-  console.error("MongoDB connection failed:", err)
-})
+connectDB()
+  .then(() => {
+    app.listen(port, () => {
+      console.log(`Teacher ERP API listening on port ${port}`)
+    })
+  })
+  .catch((err) => {
+    console.error("MongoDB connection failed:", err)
+    process.exit(1)
+  })
