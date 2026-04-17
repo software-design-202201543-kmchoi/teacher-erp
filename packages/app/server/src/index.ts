@@ -1,6 +1,7 @@
 import express from "express"
 import cookieParser from "cookie-parser"
 import authRouter from "./routes/auth.js"
+import { connectDB } from "./db.js"
 
 const app = express()
 const port = Number(process.env.PORT ?? 3001)
@@ -29,6 +30,13 @@ app.get("/health", (_req, res) => {
 
 app.use("/api/auth", authRouter)
 
-app.listen(port, () => {
-  console.log(`Teacher ERP API listening on port ${port}`)
-})
+connectDB()
+  .then(() => {
+    app.listen(port, () => {
+      console.log(`Teacher ERP API listening on port ${port}`)
+    })
+  })
+  .catch((err) => {
+    console.error("MongoDB connection failed:", err)
+    process.exit(1)
+  })

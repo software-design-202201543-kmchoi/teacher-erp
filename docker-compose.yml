@@ -1,0 +1,46 @@
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: teacher_erp
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  server:
+    build:
+      context: .
+      dockerfile: packages/app/server/Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: "3001"
+      MONGODB_URI: mongodb://mongo:27017/teacher_erp
+      CLIENT_ORIGIN: http://localhost:5173
+      JWT_SECRET: ${JWT_SECRET:-teacher-erp-dev-secret-change-in-production}
+      AUTH_TOKEN_TTL_SECONDS: ${AUTH_TOKEN_TTL_SECONDS:-3600}
+      NODE_ENV: ${NODE_ENV:-development}
+    depends_on:
+      mongo:
+        condition: service_healthy
+    restart: unless-stopped
+
+  client:
+    build:
+      context: .
+      dockerfile: packages/app/client/Dockerfile
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3001}
+    depends_on:
+      - server
+    restart: unless-stopped
+
+volumes:
+  mongo_data:
