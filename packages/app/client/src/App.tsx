@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom"
 import { DashboardPage } from "@/pages/DashboardPage"
 import { LoginPage } from "@/pages/LoginPage"
+import { ForbiddenPage } from "@/pages/ForbiddenPage"
 
 import { useAuth } from "@/hooks/useAuth"
 
@@ -29,7 +30,7 @@ export function App() {
         path="/login"
         element={isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />}
       />
-
+      <Route path="/forbidden" element={<ForbiddenPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

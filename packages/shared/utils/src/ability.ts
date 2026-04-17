@@ -22,18 +22,17 @@ export type AppAbilities =
   | [Actions, "Student" | { _id: string }]
   | [Actions, "Teacher"]
   | [Actions, "Parent"]
-  | [Actions, "Grade" | { teacherId: string; studentId: string }]
+  | [Actions, "Grade" | { teacher_id: string; student_id: string }]
   | [
       Actions,
       | "Feedback"
       | {
-          teacherId: string;
-          studentId: string;
-          isPublicToStudent: boolean;
-          isPublicToParent: boolean;
+          teacher_id: string;
+          student_id: string;
+          visibility: string;
         }
     ]
-  | [Actions, "Counseling" | { teacherId: string }]
+  | [Actions, "Counseling" | { teacher_id: string }]
   | [Actions, "all"];
 
 export type AppAbility = MongoAbility<AppAbilities>;
@@ -43,26 +42,28 @@ export function defineAbilityFor(user: IUser): AppAbility {
 
   if (user.role === "TEACHER") {
     can("read", "Student");
-    can("manage", "Counseling", { teacherId: user._id });
-    can("manage", "Feedback", { teacherId: user._id });
-    can("manage", "Grade", { teacherId: user._id });
+    can("manage", "Counseling", { teacher_id: user._id });
+    can("manage", "Feedback", { teacher_id: user._id });
+    can("manage", "Grade", { teacher_id: user._id });
     can("read", "Teacher");
   } else if (user.role === "STUDENT") {
     can("read", "Student", { _id: user._id });
-    can("read", "Grade", { studentId: user._id });
-    can("read", "Feedback", { studentId: user._id, isPublicToStudent: true });
+    can("read", "Grade", { student_id: user._id });
+    can("read", "Feedback", { student_id: user._id, visibility: { $in: ["STUDENT", "ALL"] } });
   } else if (user.role === "PARENT") {
     const parentUser = user as IParentUser;
     can("read", "Student", { _id: { $in: parentUser.children } });
-    can("read", "Grade", { studentId: { $in: parentUser.children } });
+    can("read", "Grade", { student_id: { $in: parentUser.children } });
     can("read", "Feedback", {
-      studentId: { $in: parentUser.children },
-      isPublicToParent: true,
+      student_id: { $in: parentUser.children },
+      visibility: { $in: ["PARENT", "ALL"] },
     });
   }
 
   return build({
-    detectSubjectType: (object: any) =>
-      (object.__t as ExtractSubjectType<Subjects>) || "all",
+    detectSubjectType: (object: any) => {
+      if (object.role) return object.role as ExtractSubjectType<Subjects>; // For User discriminators
+      return (object.__t as ExtractSubjectType<Subjects>) || "all";
+    },
   });
 }

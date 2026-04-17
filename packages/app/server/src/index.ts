@@ -1,6 +1,8 @@
 import express from "express"
 import cookieParser from "cookie-parser"
 import authRouter from "./routes/auth.js"
+import gradesRouter from "./routes/grades.js"
+import counselingRouter from "./routes/counseling.js"
 import { connectDB } from "./db.js"
 
 const app = express()
@@ -29,6 +31,8 @@ app.get("/health", (_req, res) => {
 })
 
 app.use("/api/auth", authRouter)
+app.use("/api/grades", gradesRouter)
+app.use("/api/counseling", counselingRouter)
 
 connectDB()
   .then(() => {

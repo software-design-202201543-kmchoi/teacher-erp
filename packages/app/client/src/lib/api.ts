@@ -18,6 +18,10 @@ export class ApiError extends Error {
   }
 }
 
+export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  return request<T>(path, init)
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers ?? {})
   if (!headers.has("Content-Type") && init?.body) {
