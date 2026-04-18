@@ -15,6 +15,12 @@ export const demoAuthAccounts: DemoAuthAccount[] = [
     userId: "teacher-1",
   },
   {
+    role: "TEACHER",
+    email: "teacher2@school.local",
+    password: "teacher2234",
+    userId: "teacher-2",
+  },
+  {
     role: "STUDENT",
     email: "student1@school.local",
     password: "student1234",

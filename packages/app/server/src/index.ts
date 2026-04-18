@@ -1,7 +1,9 @@
 import express from "express"
 import cookieParser from "cookie-parser"
 import authRouter from "./routes/auth.js"
+import studentsRouter from "./routes/students.js"
 import gradesRouter from "./routes/grades.js"
+import feedbackRouter from "./routes/feedback.js"
 import counselingRouter from "./routes/counseling.js"
 import { connectDB } from "./db.js"
 
@@ -16,7 +18,7 @@ app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", clientOrigin)
   res.header("Access-Control-Allow-Credentials", "true")
   res.header("Access-Control-Allow-Headers", "Content-Type, Authorization")
-  res.header("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
+  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
 
   if (req.method === "OPTIONS") {
     res.status(204).end()
@@ -31,7 +33,9 @@ app.get("/health", (_req, res) => {
 })
 
 app.use("/api/auth", authRouter)
+app.use("/api/students", studentsRouter)
 app.use("/api/grades", gradesRouter)
+app.use("/api/feedback", feedbackRouter)
 app.use("/api/counseling", counselingRouter)
 
 connectDB()

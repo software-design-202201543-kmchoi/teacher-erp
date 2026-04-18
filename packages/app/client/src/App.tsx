@@ -2,7 +2,12 @@ import { Navigate, Route, Routes } from "react-router-dom"
 import { DashboardPage } from "@/pages/DashboardPage"
 import { LoginPage } from "@/pages/LoginPage"
 import { ForbiddenPage } from "@/pages/ForbiddenPage"
-
+import { StudentsPage } from "@/pages/StudentsPage"
+import { StudentDetailPage } from "@/pages/StudentDetailPage"
+import { GradesPage } from "@/pages/GradesPage"
+import { FeedbackPage } from "@/pages/FeedbackPage"
+import { CounselingPage } from "@/pages/CounselingPage"
+import { ProtectedRoute } from "@/components/ProtectedRoute"
 import { useAuth } from "@/hooks/useAuth"
 
 export function App() {
@@ -30,6 +35,19 @@ export function App() {
         path="/login"
         element={isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />}
       />
+
+      <Route
+        path="/students"
+        element={
+          <ProtectedRoute action="read" subject="Student">
+            <StudentsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="/students/:id" element={<StudentDetailPage />} />
+      <Route path="/students/:id/grades" element={<GradesPage />} />
+      <Route path="/students/:id/feedback" element={<FeedbackPage />} />
+      <Route path="/students/:id/counseling" element={<CounselingPage />} />
       <Route path="/forbidden" element={<ForbiddenPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
