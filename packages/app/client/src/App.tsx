@@ -40,7 +40,7 @@ export function App() {
         path="/students"
         element={
           <AppShell>
-            <ProtectedRoute action="read" subject="Student">
+            <ProtectedRoute action="read" subject="Student" subjectData={{ _id: "__list__" }}>
               <StudentsPage />
             </ProtectedRoute>
           </AppShell>

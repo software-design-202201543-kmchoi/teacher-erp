@@ -25,7 +25,7 @@ export function DashboardPage() {
         <p className="text-sm text-muted-foreground">Role: {user.role}</p>
         <p className="text-sm text-muted-foreground">Email: {user.email}</p>
         <div className="mt-4 flex gap-3">
-          {ability.can("read", "Student") && (
+          {user.role === "TEACHER" && (
             <Button asChild variant="default">
               <Link to="/students">학생 목록 보기</Link>
             </Button>

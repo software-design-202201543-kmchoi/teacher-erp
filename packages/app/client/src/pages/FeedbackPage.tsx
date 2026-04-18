@@ -4,6 +4,14 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useAuth } from "@/hooks/useAuth"
 import { getFeedback, createFeedback, deleteFeedback } from "@/lib/api"
 import { Button } from "@/components/ui/button"
+import {
+  DialogRoot,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from "@/components/ui/dialog"
 import type { IFeedback } from "@teacher-erp/shared-types"
 
 const FEEDBACK_TYPES = ["성적", "행동", "출결", "태도"] as const
@@ -38,6 +46,7 @@ export function FeedbackPage() {
   const [content, setContent] = useState("")
   const [visibility, setVisibility] = useState("PRIVATE")
   const [formError, setFormError] = useState<string | null>(null)
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false)
 
   const { data: feedbacks = [], isLoading, error } = useQuery({
     queryKey: ["feedback", studentId],
@@ -54,6 +63,7 @@ export function FeedbackPage() {
       setType("성적")
       setVisibility("PRIVATE")
       setFormError(null)
+      setFeedbackModalOpen(false)
     },
     onError: () => setFormError("피드백 작성 중 오류가 발생했습니다."),
   })
@@ -79,6 +89,68 @@ export function FeedbackPage() {
           ← 돌아가기
         </Button>
         <h1 className="text-2xl font-semibold">피드백</h1>
+        {user?.role === "TEACHER" && (
+          <div className="ml-auto">
+            <DialogRoot open={feedbackModalOpen} onOpenChange={setFeedbackModalOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm">피드백 작성</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>피드백 작성</DialogTitle>
+                </DialogHeader>
+                <form className="space-y-4 pt-2" onSubmit={handleSubmit}>
+                  <div className="grid grid-cols-2 gap-4">
+                    <label className="block space-y-1">
+                      <span className="text-sm font-medium">유형</span>
+                      <select
+                        className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                        value={type}
+                        onChange={(e) => setType(e.target.value)}
+                      >
+                        {FEEDBACK_TYPES.map((t) => (
+                          <option key={t} value={t}>{t}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="block space-y-1">
+                      <span className="text-sm font-medium">공개 범위</span>
+                      <select
+                        className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                        value={visibility}
+                        onChange={(e) => setVisibility(e.target.value)}
+                      >
+                        {VISIBILITY_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                  <label className="block space-y-1">
+                    <span className="text-sm font-medium">내용</span>
+                    <textarea
+                      required
+                      rows={3}
+                      className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                      value={content}
+                      onChange={(e) => setContent(e.target.value)}
+                      placeholder="피드백 내용을 입력하세요."
+                    />
+                  </label>
+                  {formError && <p className="text-sm text-destructive">{formError}</p>}
+                  <div className="flex justify-end gap-2">
+                    <DialogClose asChild>
+                      <Button type="button" variant="outline" size="sm">취소</Button>
+                    </DialogClose>
+                    <Button type="submit" size="sm" disabled={createMutation.isPending}>
+                      {createMutation.isPending ? "저장 중..." : "피드백 저장"}
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </DialogRoot>
+          </div>
+        )}
       </div>
 
       {isLoading && <p className="text-sm text-muted-foreground">피드백 불러오는 중...</p>}
@@ -117,55 +189,6 @@ export function FeedbackPage() {
           </div>
         ))}
       </div>
-
-      {user?.role === "TEACHER" && (
-        <section className="rounded-xl border bg-card p-6 shadow-sm">
-          <h2 className="mb-4 text-lg font-medium">피드백 작성</h2>
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            <div className="grid grid-cols-2 gap-4">
-              <label className="block space-y-1">
-                <span className="text-sm font-medium">유형</span>
-                <select
-                  className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                  value={type}
-                  onChange={(e) => setType(e.target.value)}
-                >
-                  {FEEDBACK_TYPES.map((t) => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </select>
-              </label>
-              <label className="block space-y-1">
-                <span className="text-sm font-medium">공개 범위</span>
-                <select
-                  className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                  value={visibility}
-                  onChange={(e) => setVisibility(e.target.value)}
-                >
-                  {VISIBILITY_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <label className="block space-y-1">
-              <span className="text-sm font-medium">내용</span>
-              <textarea
-                required
-                rows={3}
-                className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="피드백 내용을 입력하세요."
-              />
-            </label>
-            {formError && <p className="text-sm text-destructive">{formError}</p>}
-            <Button type="submit" disabled={createMutation.isPending}>
-              {createMutation.isPending ? "저장 중..." : "피드백 저장"}
-            </Button>
-          </form>
-        </section>
-      )}
     </main>
   )
 }

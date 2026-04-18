@@ -1,0 +1,15 @@
+{
+  "cookies": [
+    {
+      "name": "teacher_erp_access_token",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZWFjaGVyLTEiLCJyb2xlIjoiVEVBQ0hFUiIsImVtYWlsIjoidGVhY2hlcjFAc2Nob29sLmxvY2FsIiwiaWF0IjoxNzc2NTE0MDQ3LCJleHAiOjE3NzY1MTc2NDd9.QKeWjzWU3dfR61MkTrQwCuA4U1VUEpUrW4wjkFpcq4Y",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1776517647.989699,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": []
+}

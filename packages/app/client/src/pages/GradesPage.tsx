@@ -12,6 +12,14 @@ import { calcAverage } from "@teacher-erp/shared-utils"
 import { useAuth } from "@/hooks/useAuth"
 import { getGrades, createGrade, deleteGrade } from "@/lib/api"
 import { Button } from "@/components/ui/button"
+import {
+  DialogRoot,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from "@/components/ui/dialog"
 
 export function GradesPage() {
   const { id: studentId = "" } = useParams<{ id: string }>()
@@ -61,6 +69,7 @@ export function GradesPage() {
   const [newSubject, setNewSubject] = useState("")
   const [newTerm, setNewTerm] = useState("2026-1")
   const [newScore, setNewScore] = useState("")
+  const [gradeModalOpen, setGradeModalOpen] = useState(false)
 
   const createMutation = useMutation({
     mutationFn: (data: { subject_id: string; term: string; score: number }) =>
@@ -69,6 +78,7 @@ export function GradesPage() {
       void queryClient.invalidateQueries({ queryKey: ["grades", studentId] })
       setNewSubject("")
       setNewScore("")
+      setGradeModalOpen(false)
     },
   })
 
@@ -97,6 +107,76 @@ export function GradesPage() {
           ← 뒤로가기
         </Button>
         <h1 className="text-2xl font-semibold">학생 성적 관리</h1>
+        {isTeacher && (
+          <div className="ml-auto">
+            <DialogRoot open={gradeModalOpen} onOpenChange={setGradeModalOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm">성적 추가</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>성적 입력</DialogTitle>
+                </DialogHeader>
+                <div className="flex flex-col gap-4 pt-2">
+                  <div className="flex flex-wrap items-end gap-3">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs text-muted-foreground">과목명</label>
+                      <input
+                        className="h-8 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                        placeholder="예) 국어"
+                        value={newSubject}
+                        onChange={(e) => setNewSubject(e.target.value)}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs text-muted-foreground">학기</label>
+                      <input
+                        className="h-8 w-28 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                        placeholder="예) 2026-1"
+                        value={newTerm}
+                        onChange={(e) => setNewTerm(e.target.value)}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs text-muted-foreground">점수</label>
+                      <input
+                        type="number"
+                        min={0}
+                        max={100}
+                        className="h-8 w-24 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                        placeholder="0~100"
+                        value={newScore}
+                        onChange={(e) => setNewScore(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  {createMutation.isError && (
+                    <p className="text-sm text-destructive">
+                      성적 추가에 실패했습니다.
+                    </p>
+                  )}
+                  <div className="flex justify-end gap-2">
+                    <DialogClose asChild>
+                      <Button variant="outline" size="sm">취소</Button>
+                    </DialogClose>
+                    <Button
+                      size="sm"
+                      onClick={handleCreate}
+                      disabled={
+                        createMutation.isPending ||
+                        !newSubject.trim() ||
+                        !newTerm.trim() ||
+                        newScore === ""
+                      }
+                    >
+                      {createMutation.isPending ? "추가 중..." : "추가"}
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </DialogRoot>
+          </div>
+        )}
       </div>
 
       {/* 학기 탭 */}
@@ -214,60 +294,6 @@ export function GradesPage() {
         </section>
       )}
 
-      {/* 성적 입력 폼 (교사만 표시) */}
-      {isTeacher && (
-        <section className="rounded-xl border bg-card p-6 shadow-sm">
-          <h2 className="mb-4 text-base font-semibold">성적 입력</h2>
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="flex flex-col gap-1">
-              <label className="text-xs text-muted-foreground">과목명</label>
-              <input
-                className="h-8 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                placeholder="예) 국어"
-                value={newSubject}
-                onChange={(e) => setNewSubject(e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs text-muted-foreground">학기</label>
-              <input
-                className="h-8 w-28 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                placeholder="예) 2026-1"
-                value={newTerm}
-                onChange={(e) => setNewTerm(e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs text-muted-foreground">점수</label>
-              <input
-                type="number"
-                min={0}
-                max={100}
-                className="h-8 w-24 rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                placeholder="0~100"
-                value={newScore}
-                onChange={(e) => setNewScore(e.target.value)}
-              />
-            </div>
-            <Button
-              onClick={handleCreate}
-              disabled={
-                createMutation.isPending ||
-                !newSubject.trim() ||
-                !newTerm.trim() ||
-                newScore === ""
-              }
-            >
-              {createMutation.isPending ? "추가 중..." : "추가"}
-            </Button>
-          </div>
-          {createMutation.isError && (
-            <p className="mt-2 text-sm text-destructive">
-              성적 추가에 실패했습니다.
-            </p>
-          )}
-        </section>
-      )}
     </main>
   )
 }

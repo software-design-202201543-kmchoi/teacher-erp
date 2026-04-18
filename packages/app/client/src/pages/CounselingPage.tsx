@@ -4,6 +4,14 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useAuth } from "@/hooks/useAuth"
 import { getCounseling, createCounseling } from "@/lib/api"
 import { Button } from "@/components/ui/button"
+import {
+  DialogRoot,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from "@/components/ui/dialog"
 import type { ICounselingRecord } from "@teacher-erp/shared-types"
 
 export function CounselingPage() {
@@ -22,6 +30,7 @@ export function CounselingPage() {
   const [formNextPlan, setFormNextPlan] = useState("")
   const [formShared, setFormShared] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+  const [counselingModalOpen, setCounselingModalOpen] = useState(false)
 
   const { data: records = [], isLoading, error } = useQuery({
     queryKey: ["counseling", studentId, activeFilter],
@@ -39,6 +48,7 @@ export function CounselingPage() {
       setFormNextPlan("")
       setFormShared(false)
       setFormError(null)
+      setCounselingModalOpen(false)
     },
     onError: () => setFormError("상담 기록 저장 중 오류가 발생했습니다."),
   })
@@ -81,6 +91,50 @@ export function CounselingPage() {
           ← 돌아가기
         </Button>
         <h1 className="text-2xl font-semibold">상담 내역</h1>
+        <div className="ml-auto">
+          <DialogRoot open={counselingModalOpen} onOpenChange={setCounselingModalOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm">상담 기록 추가</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>상담 기록 추가</DialogTitle>
+              </DialogHeader>
+              <form className="space-y-4 pt-2" onSubmit={handleFormSubmit}>
+                <label className="block space-y-1">
+                  <span className="text-sm font-medium">상담 날짜</span>
+                  <input required type="date" className="block w-full rounded-md border bg-background px-3 py-2 text-sm"
+                    value={formDate} onChange={(e) => setFormDate(e.target.value)} />
+                </label>
+                <label className="block space-y-1">
+                  <span className="text-sm font-medium">상담 내용</span>
+                  <textarea required rows={3} className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                    value={formContent} onChange={(e) => setFormContent(e.target.value)}
+                    placeholder="상담 내용을 입력하세요." />
+                </label>
+                <label className="block space-y-1">
+                  <span className="text-sm font-medium">다음 계획 (선택)</span>
+                  <input type="text" className="block w-full rounded-md border bg-background px-3 py-2 text-sm"
+                    value={formNextPlan} onChange={(e) => setFormNextPlan(e.target.value)}
+                    placeholder="후속 상담 계획 등..." />
+                </label>
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" checked={formShared} onChange={(e) => setFormShared(e.target.checked)} />
+                  다른 교사와 공유
+                </label>
+                {formError && <p className="text-sm text-destructive">{formError}</p>}
+                <div className="flex justify-end gap-2">
+                  <DialogClose asChild>
+                    <Button type="button" variant="outline" size="sm">취소</Button>
+                  </DialogClose>
+                  <Button type="submit" size="sm" disabled={createMutation.isPending}>
+                    {createMutation.isPending ? "저장 중..." : "상담 기록 저장"}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </DialogRoot>
+        </div>
       </div>
 
       <section className="rounded-xl border bg-card p-4 shadow-sm">
@@ -132,37 +186,6 @@ export function CounselingPage() {
           </div>
         ))}
       </div>
-
-      <section className="rounded-xl border bg-card p-6 shadow-sm">
-        <h2 className="mb-4 text-lg font-medium">상담 기록 추가</h2>
-        <form className="space-y-4" onSubmit={handleFormSubmit}>
-          <label className="block space-y-1">
-            <span className="text-sm font-medium">상담 날짜</span>
-            <input required type="date" className="block w-full rounded-md border bg-background px-3 py-2 text-sm"
-              value={formDate} onChange={(e) => setFormDate(e.target.value)} />
-          </label>
-          <label className="block space-y-1">
-            <span className="text-sm font-medium">상담 내용</span>
-            <textarea required rows={3} className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-              value={formContent} onChange={(e) => setFormContent(e.target.value)}
-              placeholder="상담 내용을 입력하세요." />
-          </label>
-          <label className="block space-y-1">
-            <span className="text-sm font-medium">다음 계획 (선택)</span>
-            <input type="text" className="block w-full rounded-md border bg-background px-3 py-2 text-sm"
-              value={formNextPlan} onChange={(e) => setFormNextPlan(e.target.value)}
-              placeholder="후속 상담 계획 등..." />
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={formShared} onChange={(e) => setFormShared(e.target.checked)} />
-            다른 교사와 공유
-          </label>
-          {formError && <p className="text-sm text-destructive">{formError}</p>}
-          <Button type="submit" disabled={createMutation.isPending}>
-            {createMutation.isPending ? "저장 중..." : "상담 기록 저장"}
-          </Button>
-        </form>
-      </section>
     </main>
   )
 }
