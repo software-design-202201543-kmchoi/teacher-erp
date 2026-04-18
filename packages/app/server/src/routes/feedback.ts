@@ -1,7 +1,8 @@
 import { Router } from "express"
-import { demoFeedbackByStudentId } from "@teacher-erp/shared-utils"
+import { demoFeedbackByStudentId, demoUsersById } from "@teacher-erp/shared-utils"
 import type { IFeedback, IParentUser, FeedbackType, FeedbackVisibility } from "@teacher-erp/shared-types"
 import { authenticate } from "../middleware/authenticate.js"
+import { createNotification } from "../utils/createNotification.js"
 
 const router = Router()
 
@@ -90,6 +91,17 @@ router.post("/by-student/:studentId", authenticate, (req, res) => {
     demoFeedbackByStudentId[studentId] = []
   }
   demoFeedbackByStudentId[studentId].push(newFeedback)
+
+  if (["STUDENT", "ALL"].includes(newFeedback.visibility)) {
+    createNotification(studentId, "새 피드백", "교사가 피드백을 작성했습니다.")
+  }
+  if (["PARENT", "ALL"].includes(newFeedback.visibility)) {
+    for (const u of Object.values(demoUsersById)) {
+      if (u.role === "PARENT" && (u as IParentUser).children.includes(studentId)) {
+        createNotification(u._id, "자녀 피드백", "자녀에 대한 피드백이 작성되었습니다.")
+      }
+    }
+  }
 
   res.status(201).json(newFeedback)
 })

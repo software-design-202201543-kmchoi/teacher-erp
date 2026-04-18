@@ -5,3 +5,4 @@ export * from './demo-grades.js';
 export * from './demo-feedback.js';
 export * from './demo-counseling.js';
 export * from './grade-calc.js';
+export * from './demo-notifications.js';

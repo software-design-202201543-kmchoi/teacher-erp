@@ -52,9 +52,9 @@ export function StudentsPage() {
                 onClick={() => navigate(`/students/${student._id}`)}
               >
                 <td className="px-4 py-3 font-medium">{student.name}</td>
-                <td className="px-4 py-3 text-muted-foreground">{student.grade}학년</td>
-                <td className="px-4 py-3 text-muted-foreground">{student.classId}반</td>
-                <td className="px-4 py-3 text-muted-foreground">{student.studentNumber}번</td>
+                <td className="px-4 py-3 text-muted-foreground">{student.grade_level}학년</td>
+                <td className="px-4 py-3 text-muted-foreground">{student.class_num}반</td>
+                <td className="px-4 py-3 text-muted-foreground">{student.student_num}번</td>
               </tr>
             ))}
             {students.length === 0 && (

@@ -5,6 +5,8 @@ import studentsRouter from "./routes/students.js"
 import gradesRouter from "./routes/grades.js"
 import feedbackRouter from "./routes/feedback.js"
 import counselingRouter from "./routes/counseling.js"
+import reportsRouter from "./routes/reports.js"
+import notificationsRouter from "./routes/notifications.js"
 import { connectDB } from "./db.js"
 
 const app = express()
@@ -37,6 +39,8 @@ app.use("/api/students", studentsRouter)
 app.use("/api/grades", gradesRouter)
 app.use("/api/feedback", feedbackRouter)
 app.use("/api/counseling", counselingRouter)
+app.use("/api/reports", reportsRouter)
+app.use("/api/notifications", notificationsRouter)
 
 connectDB()
   .then(() => {

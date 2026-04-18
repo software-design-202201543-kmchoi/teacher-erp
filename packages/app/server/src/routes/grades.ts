@@ -2,6 +2,7 @@ import { Router } from "express"
 import { demoGrades, demoGradesByStudentId, calcGrade, demoUsersById } from "@teacher-erp/shared-utils"
 import type { IParentUser } from "@teacher-erp/shared-types"
 import { authenticate } from "../middleware/authenticate.js"
+import { createNotification } from "../utils/createNotification.js"
 
 const router = Router()
 
@@ -63,6 +64,17 @@ router.post("/by-student/:studentId", authenticate, (req, res) => {
   demoGrades.push(newGrade)
   if (!demoGradesByStudentId[studentId]) demoGradesByStudentId[studentId] = []
   demoGradesByStudentId[studentId].push(newGrade)
+
+  createNotification(
+    studentId,
+    "새 성적 등록",
+    `${newGrade.subject_id.replace("subject-", "")} 과목 성적이 등록되었습니다. ${newGrade.score}점`
+  )
+  for (const u of Object.values(demoUsersById)) {
+    if (u.role === "PARENT" && (u as IParentUser).children.includes(studentId)) {
+      createNotification(u._id, "자녀 성적 업데이트", `학생 성적이 등록되었습니다.`)
+    }
+  }
 
   res.status(201).json(newGrade)
 })

@@ -12,7 +12,9 @@ export function StudentDetailPage() {
   const queryClient = useQueryClient()
 
   const [isEditing, setIsEditing] = useState(false)
-  const [attendanceInput, setAttendanceInput] = useState("")
+  const [absences, setAbsences] = useState(0)
+  const [tardies, setTardies] = useState(0)
+  const [earlyLeaves, setEarlyLeaves] = useState(0)
   const [notesInput, setNotesInput] = useState("")
 
   const {
@@ -36,8 +38,10 @@ export function StudentDetailPage() {
   })
 
   const mutation = useMutation({
-    mutationFn: (data: { attendance_info?: string; special_notes?: string }) =>
-      updateAcademicRecord(id!, data),
+    mutationFn: (data: {
+      attendance_info?: { absences?: number; tardies?: number; earlyLeaves?: number }
+      special_notes?: string
+    }) => updateAcademicRecord(id!, data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["academic-record", id] })
       setIsEditing(false)
@@ -47,14 +51,16 @@ export function StudentDetailPage() {
   const canEdit = ability.can("update", "Student") || user?.role === "TEACHER"
 
   function handleEditStart() {
-    setAttendanceInput(academicRecord?.attendance_info ?? "")
+    setAbsences(academicRecord?.attendance_info?.absences ?? 0)
+    setTardies(academicRecord?.attendance_info?.tardies ?? 0)
+    setEarlyLeaves(academicRecord?.attendance_info?.earlyLeaves ?? 0)
     setNotesInput(academicRecord?.special_notes ?? "")
     setIsEditing(true)
   }
 
   function handleSave() {
     mutation.mutate({
-      attendance_info: attendanceInput,
+      attendance_info: { absences, tardies, earlyLeaves },
       special_notes: notesInput,
     })
   }
@@ -134,18 +140,31 @@ export function StudentDetailPage() {
             <div>
               <p className="text-sm font-medium text-muted-foreground mb-1">출결</p>
               {isEditing ? (
-                <textarea
-                  className="w-full rounded-md border bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
-                  rows={3}
-                  value={attendanceInput}
-                  onChange={(e) => setAttendanceInput(e.target.value)}
-                  placeholder="출결 정보를 입력하세요"
-                />
+                <div className="grid grid-cols-3 gap-2">
+                  {(
+                    [
+                      { label: "결석", value: absences, setter: setAbsences },
+                      { label: "지각", value: tardies, setter: setTardies },
+                      { label: "조퇴", value: earlyLeaves, setter: setEarlyLeaves },
+                    ] as const
+                  ).map(({ label, value, setter }) => (
+                    <label key={label} className="flex flex-col gap-1 text-xs text-muted-foreground">
+                      {label}
+                      <input
+                        type="number"
+                        min={0}
+                        className="rounded-md border bg-background px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                        value={value}
+                        onChange={(e) => setter(Number(e.target.value))}
+                      />
+                    </label>
+                  ))}
+                </div>
               ) : (
-                <p className="text-sm whitespace-pre-wrap">
-                  {academicRecord?.attendance_info || (
-                    <span className="text-muted-foreground italic">없음</span>
-                  )}
+                <p className="text-sm">
+                  결석 {academicRecord?.attendance_info?.absences ?? 0}일 ·{" "}
+                  지각 {academicRecord?.attendance_info?.tardies ?? 0}회 ·{" "}
+                  조퇴 {academicRecord?.attendance_info?.earlyLeaves ?? 0}회
                 </p>
               )}
             </div>

@@ -12,8 +12,7 @@ const baseUserSchema = new Schema({
 export const UserModel = mongoose.model('User', baseUserSchema);
 
 export const TeacherModel = UserModel.discriminator('TEACHER', new Schema({
-  subject: { type: String }, // Primary subject
-  subjectsTaught: [{ type: String }],
+  subjects_taught: [{ type: String }],
   homeroom: {
     grade_level: { type: Number },
     class_num: { type: Number }

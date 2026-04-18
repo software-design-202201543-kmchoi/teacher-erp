@@ -1,4 +1,4 @@
-import type { IUser, IStudentUser, IAcademicRecord, IGrade, IFeedback, ICounselingRecord } from "@teacher-erp/shared-types"
+import type { IUser, IStudentUser, IAcademicRecord, IGrade, IFeedback, ICounselingRecord, INotification } from "@teacher-erp/shared-types"
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3001"
 
@@ -72,21 +72,27 @@ export async function getStudents(): Promise<{ students: IStudentUser[] }> {
 }
 
 export async function getStudent(id: string): Promise<IStudentUser> {
-  return request<IStudentUser>(`/api/students/${id}`)
+  const data = await request<{ student: IStudentUser }>(`/api/students/${id}`)
+  return data.student
 }
 
 export async function getAcademicRecord(studentId: string): Promise<IAcademicRecord> {
-  return request<IAcademicRecord>(`/api/students/${studentId}/academic-record`)
+  const data = await request<{ academicRecord: IAcademicRecord }>(`/api/students/${studentId}/academic-record`)
+  return data.academicRecord
 }
 
 export async function updateAcademicRecord(
   studentId: string,
-  data: { attendance_info?: string; special_notes?: string }
+  data: {
+    attendance_info?: { absences?: number; tardies?: number; earlyLeaves?: number }
+    special_notes?: string
+  }
 ): Promise<IAcademicRecord> {
-  return request<IAcademicRecord>(`/api/students/${studentId}/academic-record`, {
+  const result = await request<{ academicRecord: IAcademicRecord }>(`/api/students/${studentId}/academic-record`, {
     method: "PUT",
     body: JSON.stringify(data),
   })
+  return result.academicRecord
 }
 
 // --- Grades ---
@@ -173,4 +179,17 @@ export async function updateCounseling(
     method: "PUT",
     body: JSON.stringify(data),
   })
+}
+
+// --- Notifications ---
+export async function getNotifications(): Promise<INotification[]> {
+  return request<INotification[]>("/api/notifications")
+}
+
+export async function markNotificationRead(id: string): Promise<INotification> {
+  return request<INotification>(`/api/notifications/${id}/read`, { method: "POST" })
+}
+
+export async function markAllNotificationsRead(): Promise<{ ok: boolean }> {
+  return request<{ ok: boolean }>("/api/notifications/read-all", { method: "POST" })
 }
