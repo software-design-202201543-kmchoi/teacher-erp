@@ -39,3 +39,13 @@ coverage/
 
 credentials.json
 secret.key
+
+
+# Sprint skill
+.sprint-state.json*
+run-sprint.sh
+
+# Agent directories 
+.github
+.gemini
+.claude

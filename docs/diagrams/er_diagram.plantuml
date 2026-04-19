@@ -15,7 +15,7 @@ entity "User (사용자)" as user {
 entity "Teacher (교사)" as teacher {
   * user_id : UUID <<FK>>
   --
-  subject : String
+  subject : String (주임과목)
 }
 
 entity "Student (학생)" as student {
@@ -51,6 +51,11 @@ entity "Subject (과목)" as subject {
   * id : UUID
   --
   name : String
+}
+
+entity "TeacherSubject (교사-과목)" as teacher_subject {
+  * teacher_id : UUID <<FK>>
+  * subject_id : UUID <<FK>>
 }
 
 entity "Grade (성적)" as grade {
@@ -108,6 +113,9 @@ student ||--|| academic_record
 student ||--o{ grade
 subject ||--o{ grade
 teacher ||--o{ grade
+
+teacher ||--o{ teacher_subject
+subject ||--o{ teacher_subject
 
 student ||--o{ feedback
 teacher ||--o{ feedback

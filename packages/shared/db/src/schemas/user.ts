@@ -12,19 +12,20 @@ const baseUserSchema = new Schema({
 export const UserModel = mongoose.model('User', baseUserSchema);
 
 export const TeacherModel = UserModel.discriminator('TEACHER', new Schema({
-  subjectsTaught: [{ type: String }],
+  subjects_taught: [{ type: String }],
   homeroom: {
-    grade: { type: Number },
-    classId: { type: Number }
+    grade_level: { type: Number },
+    class_num: { type: Number }
   }
 }));
 
 export const StudentModel = UserModel.discriminator('STUDENT', new Schema({
-  grade: { type: Number, required: true },
-  classId: { type: Number, required: true },
-  studentNumber: { type: Number, required: true }
+  grade_level: { type: Number, required: true },
+  class_num: { type: Number, required: true },
+  student_num: { type: Number, required: true }
 }));
 
 export const ParentModel = UserModel.discriminator('PARENT', new Schema({
-  children: [{ type: Schema.Types.ObjectId, ref: 'User' }]
+  phone_number: { type: String },
+  children: [{ type: Schema.Types.ObjectId, ref: 'User' }],
 }));

@@ -1,8 +1,9 @@
+import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/hooks/useAuth"
 
 export function DashboardPage() {
-  const { user, logout } = useAuth()
+  const { user, ability, logout } = useAuth()
 
   if (!user) {
     return null
@@ -24,7 +25,11 @@ export function DashboardPage() {
         <p className="text-sm text-muted-foreground">Role: {user.role}</p>
         <p className="text-sm text-muted-foreground">Email: {user.email}</p>
         <div className="mt-4 flex gap-3">
-          
+          {user.role === "TEACHER" && (
+            <Button asChild variant="default">
+              <Link to="/students">학생 목록 보기</Link>
+            </Button>
+          )}
           <Button variant="outline" onClick={() => void logout()}>
             로그아웃
           </Button>

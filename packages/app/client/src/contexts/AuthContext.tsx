@@ -27,9 +27,9 @@ const guestAbility = defineAbilityFor({
   email: "guest@local",
   name: "Guest",
   role: "STUDENT",
-  grade: 0,
-  classId: 0,
-  studentNumber: 0,
+  grade_level: 0,
+  class_num: 0,
+  student_num: 0,
   createdAt: new Date(0),
   updatedAt: new Date(0),
 })
