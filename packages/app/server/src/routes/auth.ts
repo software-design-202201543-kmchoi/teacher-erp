@@ -1,6 +1,15 @@
 import { Router } from "express"
+import type { RequestHandler } from "express"
 import { defineAbilityFor, demoUsersById } from "@teacher-erp/shared-utils"
-import type { Role } from "@teacher-erp/shared-types"
+import type {
+  ApiErrorResponse,
+  LoginParams,
+  LoginRequestBody,
+  LoginResponse,
+  LoginRoleParam,
+  MeResponse,
+  Role,
+} from "@teacher-erp/shared-types"
 import { demoAuthAccounts } from "../data/authAccounts.js"
 import { authenticate } from "../middleware/authenticate.js"
 import {
@@ -12,15 +21,17 @@ import {
 
 const router = Router()
 
-type LoginRoleParam = "student" | "teacher" | "parent"
-
 const roleParamToRole: Record<LoginRoleParam, Role> = {
   student: "STUDENT",
   teacher: "TEACHER",
   parent: "PARENT",
 }
 
-router.post("/login/:role", (req, res) => {
+const loginHandler: RequestHandler<
+  LoginParams,
+  LoginResponse | ApiErrorResponse,
+  Partial<LoginRequestBody>
+> = (req, res) => {
   const roleParam = req.params.role as LoginRoleParam
   const role = roleParamToRole[roleParam]
 
@@ -68,23 +79,29 @@ router.post("/login/:role", (req, res) => {
     rules: defineAbilityFor(user).rules,
     expiresInSeconds: getAccessTokenExpiresInSeconds(),
   })
-})
+}
+
+router.post("/login/:role", loginHandler)
 
 router.post("/logout", (_req, res) => {
   clearAccessTokenCookie(res)
   res.status(204).end()
 })
 
-router.get("/me", authenticate, (req, res) => {
-  if (!req.authUser || !req.ability) {
-    res.status(401).json({ message: "Unauthenticated" })
-    return
-  }
+router.get(
+  "/me",
+  authenticate,
+  (req: Request, res: Response<MeResponse | ApiErrorResponse>) => {
+    if (!req.authUser || !req.ability) {
+      res.status(401).json({ message: "Unauthenticated" })
+      return
+    }
 
-  res.json({
-    user: req.authUser,
-    rules: req.ability.rules,
-  })
-})
+    res.json({
+      user: req.authUser,
+      rules: req.ability.rules,
+    })
+  }
+)
 
 export default router
