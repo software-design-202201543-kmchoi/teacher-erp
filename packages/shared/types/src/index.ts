@@ -97,3 +97,5 @@ export interface INotification {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export * from "./api/index.js";
