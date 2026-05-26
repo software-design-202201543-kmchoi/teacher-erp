@@ -1,0 +1,183 @@
+name: Build & Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  AWS_REGION: ap-northeast-2
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  # ── 1. 타입 체크 ─────────────────────────────────────────────────────────────
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: latest
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm --filter server typecheck && pnpm --filter client typecheck
+
+  # ── 2. 서버 이미지 빌드 & ECR 푸시 ──────────────────────────────────────────
+  build-server:
+    name: Build & Push Server
+    runs-on: ubuntu-latest
+    needs: typecheck
+    if: github.ref == 'refs/heads/main'
+    outputs:
+      image-tag: ${{ steps.meta.outputs.sha }}
+      ecr-registry: ${{ steps.login-ecr.outputs.registry }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: AWS 인증 (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: ECR 로그인
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - id: meta
+        run: echo "sha=${GITHUB_SHA::8}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: packages/app/server/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/teacher-erp/server:${{ steps.meta.outputs.sha }}
+            ${{ steps.login-ecr.outputs.registry }}/teacher-erp/server:latest
+          cache-from: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/teacher-erp/server:latest
+          cache-to: type=inline
+
+  # ── 3. 클라이언트 이미지 빌드 & ECR 푸시 ─────────────────────────────────────
+  build-client:
+    name: Build & Push Client
+    runs-on: ubuntu-latest
+    needs: typecheck
+    if: github.ref == 'refs/heads/main'
+    outputs:
+      image-tag: ${{ steps.meta.outputs.sha }}
+      ecr-registry: ${{ steps.login-ecr.outputs.registry }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: AWS 인증 (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: ECR 로그인
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - id: meta
+        run: echo "sha=${GITHUB_SHA::8}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: packages/app/client/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/teacher-erp/client:${{ steps.meta.outputs.sha }}
+            ${{ steps.login-ecr.outputs.registry }}/teacher-erp/client:latest
+          cache-from: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/teacher-erp/client:latest
+          cache-to: type=inline
+
+  # ── 4. 서버 ECS 배포 ──────────────────────────────────────────────────────────
+  deploy-server:
+    name: Deploy Server → ECS
+    runs-on: ubuntu-latest
+    needs: build-server
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: AWS 인증 (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: ECR 로그인
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: 현재 태스크 정의 다운로드
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition teacher-erp-server \
+            --query taskDefinition > task-definition.json
+
+      - name: 이미지 태그 업데이트
+        id: render
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: server
+          image: ${{ needs.build-server.outputs.ecr-registry }}/teacher-erp/server:${{ needs.build-server.outputs.image-tag }}
+
+      - name: ECS 배포 (안정화 대기)
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render.outputs.task-definition }}
+          service: teacher-erp-server
+          cluster: teacher-erp
+          wait-for-service-stability: true
+
+  # ── 5. 클라이언트 ECS 배포 ────────────────────────────────────────────────────
+  deploy-client:
+    name: Deploy Client → ECS
+    runs-on: ubuntu-latest
+    needs: build-client
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: AWS 인증 (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: ECR 로그인
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: 현재 태스크 정의 다운로드
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition teacher-erp-client \
+            --query taskDefinition > task-definition.json
+
+      - name: 이미지 태그 업데이트
+        id: render
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: client
+          image: ${{ needs.build-client.outputs.ecr-registry }}/teacher-erp/client:${{ needs.build-client.outputs.image-tag }}
+
+      - name: ECS 배포 (안정화 대기)
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render.outputs.task-definition }}
+          service: teacher-erp-client
+          cluster: teacher-erp
+          wait-for-service-stability: true

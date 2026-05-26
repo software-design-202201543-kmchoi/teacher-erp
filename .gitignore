@@ -52,7 +52,6 @@ secret.key
 .sprint-state.json*
 run-sprint.sh
 
-# Agent directories 
-.github
+# Agent directories
 .gemini
 .claude
