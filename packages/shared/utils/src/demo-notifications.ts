@@ -33,5 +33,5 @@ export const demoNotifications: INotification[] = [
 export const demoNotificationsByUserId: Record<string, INotification[]> = {}
 for (const n of demoNotifications) {
   if (!demoNotificationsByUserId[n.user_id]) demoNotificationsByUserId[n.user_id] = []
-  demoNotificationsByUserId[n.user_id].push(n)
+  demoNotificationsByUserId[n.user_id]!.push(n)
 }

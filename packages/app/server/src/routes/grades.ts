@@ -10,7 +10,7 @@ const router = Router()
 // TEACHER: any student | STUDENT: own grades only | PARENT: children's grades
 router.get("/by-student/:studentId", authenticate, (req, res) => {
   const user = req.authUser!
-  const { studentId } = req.params
+  const studentId = req.params['studentId'] as string
 
   const canRead =
     user.role === "TEACHER" ||
@@ -36,7 +36,7 @@ router.post("/by-student/:studentId", authenticate, (req, res) => {
     return
   }
 
-  const { studentId } = req.params
+  const studentId = req.params['studentId'] as string
   const { subject_id, term, score } = req.body as {
     subject_id?: string
     term?: string
@@ -63,7 +63,7 @@ router.post("/by-student/:studentId", authenticate, (req, res) => {
 
   demoGrades.push(newGrade)
   if (!demoGradesByStudentId[studentId]) demoGradesByStudentId[studentId] = []
-  demoGradesByStudentId[studentId].push(newGrade)
+  demoGradesByStudentId[studentId]!.push(newGrade)
 
   createNotification(
     studentId,
@@ -89,7 +89,7 @@ router.put("/:gradeId", authenticate, (req, res) => {
     return
   }
 
-  const { gradeId } = req.params
+  const gradeId = req.params['gradeId'] as string
   const gradeIndex = demoGrades.findIndex((g) => g._id === gradeId)
 
   if (gradeIndex === -1) {
@@ -97,7 +97,7 @@ router.put("/:gradeId", authenticate, (req, res) => {
     return
   }
 
-  const grade = demoGrades[gradeIndex]
+  const grade = demoGrades[gradeIndex]!
 
   if (grade.teacher_id !== user._id) {
     res.status(403).json({ message: "Forbidden" })
@@ -126,7 +126,7 @@ router.delete("/:gradeId", authenticate, (req, res) => {
     return
   }
 
-  const { gradeId } = req.params
+  const gradeId = req.params['gradeId'] as string
   const gradeIndex = demoGrades.findIndex((g) => g._id === gradeId)
 
   if (gradeIndex === -1) {
@@ -134,7 +134,7 @@ router.delete("/:gradeId", authenticate, (req, res) => {
     return
   }
 
-  const grade = demoGrades[gradeIndex]
+  const grade = demoGrades[gradeIndex]!
 
   if (grade.teacher_id !== user._id) {
     res.status(403).json({ message: "Forbidden" })
@@ -145,9 +145,9 @@ router.delete("/:gradeId", authenticate, (req, res) => {
   demoGrades.splice(gradeIndex, 1)
 
   if (demoGradesByStudentId[student_id]) {
-    const studentGradeIndex = demoGradesByStudentId[student_id].findIndex((g) => g._id === gradeId)
+    const studentGradeIndex = demoGradesByStudentId[student_id]!.findIndex((g) => g._id === gradeId)
     if (studentGradeIndex !== -1) {
-      demoGradesByStudentId[student_id].splice(studentGradeIndex, 1)
+      demoGradesByStudentId[student_id]!.splice(studentGradeIndex, 1)
     }
   }
 

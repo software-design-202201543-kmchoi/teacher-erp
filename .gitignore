@@ -26,6 +26,13 @@ packages/*/dist/
 packages/*/build/
 *.tsbuildinfo
 
+# TypeScript compiled output in src (inline build artifacts)
+packages/app/server/src/**/*.js
+packages/app/server/src/**/*.js.map
+
+# Terraform
+terraform/.terraform/
+
 # Coverage
 coverage/
 *.lcov

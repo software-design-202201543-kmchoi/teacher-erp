@@ -17,5 +17,5 @@ export const demoGrades: IGrade[] = [
 export const demoGradesByStudentId: Record<string, IGrade[]> = {}
 for (const g of demoGrades) {
   if (!demoGradesByStudentId[g.student_id]) demoGradesByStudentId[g.student_id] = []
-  demoGradesByStudentId[g.student_id].push(g)
+  demoGradesByStudentId[g.student_id]!.push(g)
 }

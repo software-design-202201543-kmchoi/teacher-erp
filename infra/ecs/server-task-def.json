@@ -1,0 +1,41 @@
+{
+  "_comment": "참고용 템플릿 — 실제 태스크 정의는 terraform/ecs.tf에서 관리합니다. GitHub Actions는 aws ecs describe-task-definition으로 현재 정의를 가져와 이미지만 교체합니다.",
+  "family": "teacher-erp-server",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "containerDefinitions": [
+    {
+      "name": "server",
+      "image": "<ECR_REPO_URL>/teacher-erp/server:<GIT_SHA>",
+      "essential": true,
+      "portMappings": [
+        { "containerPort": 3001, "protocol": "tcp" }
+      ],
+      "environment": [
+        { "name": "NODE_ENV", "value": "production" },
+        { "name": "PORT",     "value": "3001" }
+      ],
+      "secrets": [
+        { "name": "MONGODB_URI", "valueFrom": "arn:aws:ssm:ap-northeast-2:<ACCOUNT_ID>:parameter/teacher-erp/MONGODB_URI" },
+        { "name": "JWT_SECRET",  "valueFrom": "arn:aws:ssm:ap-northeast-2:<ACCOUNT_ID>:parameter/teacher-erp/JWT_SECRET"  }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group":         "/ecs/teacher-erp/server",
+          "awslogs-region":        "ap-northeast-2",
+          "awslogs-stream-prefix": "server"
+        }
+      },
+      "healthCheck": {
+        "command":     ["CMD-SHELL", "wget -qO- http://localhost:3001/health/ready || exit 1"],
+        "interval":    30,
+        "timeout":     5,
+        "retries":     3,
+        "startPeriod": 60
+      }
+    }
+  ]
+}

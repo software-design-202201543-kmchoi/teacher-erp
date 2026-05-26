@@ -15,7 +15,7 @@ router.get("/by-student/:studentId", authenticate, (req, res) => {
     return
   }
 
-  const { studentId } = req.params
+  const studentId = req.params['studentId'] as string
   let records = (demoCounselingByStudentId[studentId] ?? []).slice()
 
   // Teachers may only see shared records or records they authored
@@ -59,7 +59,7 @@ router.post("/by-student/:studentId", authenticate, (req, res) => {
     return
   }
 
-  const { studentId } = req.params
+  const studentId = req.params['studentId'] as string
   const { counsel_date, content, next_plan, is_shared } = req.body
 
   if (!counsel_date || !content || typeof is_shared !== "boolean") {
@@ -72,9 +72,9 @@ router.post("/by-student/:studentId", authenticate, (req, res) => {
     _id: `counsel-${Date.now()}`,
     student_id: studentId,
     teacher_id: user._id,
-    counsel_date: new Date(counsel_date as string),
+    counsel_date: counsel_date as string,
     content: content as string,
-    next_plan: typeof next_plan === "string" ? next_plan : undefined,
+    ...(typeof next_plan === "string" ? { next_plan } : {}),
     is_shared: is_shared as boolean,
     createdAt: now,
     updatedAt: now,
@@ -83,7 +83,7 @@ router.post("/by-student/:studentId", authenticate, (req, res) => {
   if (!demoCounselingByStudentId[studentId]) {
     demoCounselingByStudentId[studentId] = []
   }
-  demoCounselingByStudentId[studentId].push(newRecord)
+  demoCounselingByStudentId[studentId]!.push(newRecord)
 
   res.status(201).json(newRecord)
 })

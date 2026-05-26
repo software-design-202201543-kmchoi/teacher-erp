@@ -1,20 +1,15 @@
 # syntax=docker/dockerfile:1
-FROM node:20-alpine
-
-RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
-
+FROM node:22-alpine AS deps
+RUN corepack enable
 WORKDIR /app
-
-# Copy workspace manifests and lockfile first for layer caching
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
-
-# Copy all packages (workspace deps must be resolvable)
 COPY packages/ ./packages/
+RUN pnpm install --frozen-lockfile --ignore-scripts
 
-RUN pnpm install --frozen-lockfile
-
+FROM node:22-alpine
+RUN corepack enable
+WORKDIR /app
+COPY --from=deps /app ./
 WORKDIR /app/packages/app/server
-
 EXPOSE 3001
-
-CMD ["pnpm", "dev"]
+CMD ["pnpm", "start"]

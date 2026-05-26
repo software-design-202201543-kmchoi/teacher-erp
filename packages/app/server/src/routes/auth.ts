@@ -88,20 +88,14 @@ router.post("/logout", (_req, res) => {
   res.status(204).end()
 })
 
-router.get(
-  "/me",
-  authenticate,
-  (req: Request, res: Response<MeResponse | ApiErrorResponse>) => {
-    if (!req.authUser || !req.ability) {
-      res.status(401).json({ message: "Unauthenticated" })
-      return
-    }
-
-    res.json({
-      user: req.authUser,
-      rules: req.ability.rules,
-    })
+const meHandler: RequestHandler<Record<string, never>, MeResponse | ApiErrorResponse> = (req, res) => {
+  if (!req.authUser || !req.ability) {
+    res.status(401).json({ message: "Unauthenticated" })
+    return
   }
-)
+  res.json({ user: req.authUser, rules: req.ability.rules })
+}
+
+router.get("/me", authenticate, meHandler)
 
 export default router

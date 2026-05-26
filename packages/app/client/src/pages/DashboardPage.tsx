@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button"
 import { useAuth } from "@/hooks/useAuth"
 
 export function DashboardPage() {
-  const { user, ability, logout } = useAuth()
+  const { user, logout } = useAuth()
 
   if (!user) {
     return null

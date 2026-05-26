@@ -78,7 +78,7 @@ const getGradeReport: RequestHandler<
   });
 };
 
-router.get("/student/:studentId/grades", authenticate, getGradeReport);
+router.get("/student/:studentId/grades", authenticate, getGradeReport as unknown as RequestHandler);
 
 // GET /api/reports/student/:studentId/counseling
 // 상담 내역 보고서 JSON — TEACHER 전용
@@ -116,7 +116,7 @@ const getCounselingReport: RequestHandler<
   });
 };
 
-router.get("/student/:studentId/counseling", authenticate, getCounselingReport);
+router.get("/student/:studentId/counseling", authenticate, getCounselingReport as unknown as RequestHandler);
 
 // GET /api/reports/student/:studentId/feedback
 // 피드백 요약 보고서 JSON — TEACHER 전용
@@ -157,6 +157,6 @@ const getFeedbackReport: RequestHandler<
   });
 };
 
-router.get("/student/:studentId/feedback", authenticate, getFeedbackReport);
+router.get("/student/:studentId/feedback", authenticate, getFeedbackReport as unknown as RequestHandler);
 
 export default router;

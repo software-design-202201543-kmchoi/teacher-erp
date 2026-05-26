@@ -1,0 +1,111 @@
+steps:
+  # ── 1. 타입 체크 ──────────────────────────────────────────────────────────
+  - name: "node:22-alpine"
+    id: typecheck
+    entrypoint: sh
+    args:
+    - -c
+    - |
+      corepack enable
+      pnpm install --frozen-lockfile --ignore-scripts
+      pnpm --filter server typecheck
+      pnpm --filter client typecheck
+
+  # ── 2. 서버 이미지 빌드 ───────────────────────────────────────────────────
+  - name: "gcr.io/cloud-builders/docker"
+    id: build-server
+    waitFor: [typecheck]
+    args:
+    - build
+    - --cache-from
+    - "${_REGION}-docker.pkg.dev/$PROJECT_ID/teacher-erp/server:latest"
+    - -f
+    - packages/app/server/Dockerfile
+    - -t
+    - "${_REGION}-docker.pkg.dev/$PROJECT_ID/teacher-erp/server:$COMMIT_SHA"
+    - -t
+    - "${_REGION}-docker.pkg.dev/$PROJECT_ID/teacher-erp/server:latest"
+    - .
+
+  # ── 3. 클라이언트 이미지 빌드 ─────────────────────────────────────────────
+  - name: "gcr.io/cloud-builders/docker"
+    id: build-client
+    waitFor: [typecheck]
+    args:
+    - build
+    - --cache-from
+    - "${_REGION}-docker.pkg.dev/$PROJECT_ID/teacher-erp/client:latest"
+    - -f
+    - packages/app/client/Dockerfile
+    - -t
+    - "${_REGION}-docker.pkg.dev/$PROJECT_ID/teacher-erp/client:$COMMIT_SHA"
+    - -t
+    - "${_REGION}-docker.pkg.dev/$PROJECT_ID/teacher-erp/client:latest"
+    - .
+
+  # ── 4. 이미지 push (서버·클라이언트 병렬) ────────────────────────────────
+  - name: "gcr.io/cloud-builders/docker"
+    id: push-server
+    waitFor: [build-server]
+    args: [push, "--all-tags", "${_REGION}-docker.pkg.dev/$PROJECT_ID/teacher-erp/server"]
+
+  - name: "gcr.io/cloud-builders/docker"
+    id: push-client
+    waitFor: [build-client]
+    args: [push, "--all-tags", "${_REGION}-docker.pkg.dev/$PROJECT_ID/teacher-erp/client"]
+
+  # ── 5. kustomize 이미지 태그 업데이트 → git push → Config Sync 트리거 ───
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    id: update-manifests
+    waitFor: [push-server, push-client]
+    entrypoint: bash
+    args:
+    - -c
+    - |
+      set -e
+
+      # kustomize 설치
+      curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+      mv kustomize /usr/local/bin/
+
+      cd infra/overlays/production
+
+      # git SHA를 이미지 태그로 고정
+      kustomize edit set image \
+        "teacher-erp-server=${_REGION}-docker.pkg.dev/$PROJECT_ID/teacher-erp/server:$COMMIT_SHA"
+      kustomize edit set image \
+        "teacher-erp-client=${_REGION}-docker.pkg.dev/$PROJECT_ID/teacher-erp/client:$COMMIT_SHA"
+
+      # 멀티테넌시 사용 시: 각 학교 overlay도 업데이트
+      for school_dir in ../../tenants/*/; do
+        school=$(basename "$school_dir")
+        (
+          cd "$school_dir"
+          kustomize edit set image \
+            "teacher-erp-server=${_REGION}-docker.pkg.dev/$PROJECT_ID/teacher-erp/server:$COMMIT_SHA"
+          kustomize edit set image \
+            "teacher-erp-client=${_REGION}-docker.pkg.dev/$PROJECT_ID/teacher-erp/client:$COMMIT_SHA"
+        )
+      done
+
+      # Git 커밋 & push
+      git config user.email "cloud-build@$PROJECT_ID.iam.gserviceaccount.com"
+      git config user.name "Cloud Build"
+      git add -A
+      git diff --staged --quiet || \
+        git commit -m "chore(deploy): update image tag to $COMMIT_SHA [skip ci]"
+      git push origin main
+
+substitutions:
+  _REGION: asia-northeast3
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: E2_HIGHCPU_8  # 빌드 병렬화를 위해 고성능 머신 사용
+
+# Cloud Logging에 빌드 결과 이미지 기록
+images:
+- "${_REGION}-docker.pkg.dev/$PROJECT_ID/teacher-erp/server:$COMMIT_SHA"
+- "${_REGION}-docker.pkg.dev/$PROJECT_ID/teacher-erp/client:$COMMIT_SHA"
+
+timeout: "1200s"  # 20분 제한

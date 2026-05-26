@@ -18,7 +18,7 @@ function generateId(): string {
 // GET /api/feedback/by-student/:studentId — 역할별 visibility 필터
 router.get("/by-student/:studentId", authenticate, (req, res) => {
   const user = req.authUser!
-  const { studentId } = req.params
+  const studentId = req.params['studentId'] as string
   let feedbacks: IFeedback[] = demoFeedbackByStudentId[studentId] ?? []
 
   if (user.role === "TEACHER") {
@@ -53,7 +53,7 @@ router.post("/by-student/:studentId", authenticate, (req, res) => {
     return
   }
 
-  const { studentId } = req.params
+  const studentId = req.params['studentId'] as string
   const { type, content, visibility } = req.body as {
     type: unknown
     content: unknown
@@ -90,7 +90,7 @@ router.post("/by-student/:studentId", authenticate, (req, res) => {
   if (!demoFeedbackByStudentId[studentId]) {
     demoFeedbackByStudentId[studentId] = []
   }
-  demoFeedbackByStudentId[studentId].push(newFeedback)
+  demoFeedbackByStudentId[studentId]!.push(newFeedback)
 
   if (["STUDENT", "ALL"].includes(newFeedback.visibility)) {
     createNotification(studentId, "새 피드백", "교사가 피드백을 작성했습니다.")
@@ -182,11 +182,11 @@ router.delete("/:feedbackId", authenticate, (req, res) => {
   for (const [studentId, feedbacks] of Object.entries(demoFeedbackByStudentId)) {
     const idx = feedbacks.findIndex((f) => f._id === feedbackId)
     if (idx !== -1) {
-      if (feedbacks[idx].teacher_id !== user._id) {
+      if (feedbacks[idx]!.teacher_id !== user._id) {
         res.status(403).json({ message: "Forbidden: only the author teacher can delete this feedback" })
         return
       }
-      demoFeedbackByStudentId[studentId].splice(idx, 1)
+      demoFeedbackByStudentId[studentId]!.splice(idx, 1)
       res.status(204).end()
       return
     }

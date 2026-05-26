@@ -56,5 +56,5 @@ export const demoFeedback: IFeedback[] = [
 export const demoFeedbackByStudentId: Record<string, IFeedback[]> = {}
 for (const f of demoFeedback) {
   if (!demoFeedbackByStudentId[f.student_id]) demoFeedbackByStudentId[f.student_id] = []
-  demoFeedbackByStudentId[f.student_id].push(f)
+  demoFeedbackByStudentId[f.student_id]!.push(f)
 }
