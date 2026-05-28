@@ -5,7 +5,7 @@ WORKDIR /app
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY packages/ ./packages/
 RUN pnpm install --frozen-lockfile --ignore-scripts
-RUN pnpm --filter client build
+RUN VITE_API_BASE_URL="" pnpm --filter client build
 
 FROM nginx:alpine
 COPY --from=builder /app/packages/app/client/dist /usr/share/nginx/html
