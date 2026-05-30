@@ -1,9 +1,19 @@
+import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { useNavigate } from "react-router-dom"
 import { getStudents } from "@/lib/api"
+import { useAuth } from "@/hooks/useAuth"
+import { Button } from "@/components/ui/button"
+import { BatchImportDialog } from "@/components/BatchImportDialog"
+import { BatchResultDialog } from "@/components/BatchResultDialog"
+import type { BatchCreateResponse } from "@teacher-erp/shared-types"
 
 export function StudentsPage() {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const [batchOpen, setBatchOpen] = useState(false)
+  const [batchResult, setBatchResult] = useState<BatchCreateResponse | null>(null)
+
   const { data, isLoading, isError } = useQuery({
     queryKey: ["students"],
     queryFn: getStudents,
@@ -30,8 +40,17 @@ export function StudentsPage() {
   return (
     <main className="mx-auto flex min-h-svh w-full max-w-4xl flex-col gap-6 p-6">
       <section className="rounded-xl border bg-card p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold">학생 목록</h1>
-        <p className="mt-1 text-sm text-muted-foreground">전체 학생 {students.length}명</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold">학생 목록</h1>
+            <p className="mt-1 text-sm text-muted-foreground">전체 학생 {students.length}명</p>
+          </div>
+          {user?.role === "TEACHER" && (
+            <Button size="sm" onClick={() => setBatchOpen(true)}>
+              일괄 등록
+            </Button>
+          )}
+        </div>
       </section>
 
       <section className="rounded-xl border bg-card shadow-sm overflow-hidden">
@@ -67,6 +86,17 @@ export function StudentsPage() {
           </tbody>
         </table>
       </section>
+
+      <BatchImportDialog
+        open={batchOpen}
+        onOpenChange={setBatchOpen}
+        onResult={(result) => setBatchResult(result)}
+      />
+      <BatchResultDialog
+        open={batchResult !== null}
+        onOpenChange={(o) => { if (!o) setBatchResult(null) }}
+        result={batchResult}
+      />
     </main>
   )
 }

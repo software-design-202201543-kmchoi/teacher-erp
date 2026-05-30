@@ -19,11 +19,15 @@ export const TeacherModel = UserModel.discriminator('TEACHER', new Schema({
   }
 }));
 
-export const StudentModel = UserModel.discriminator('STUDENT', new Schema({
+const studentSchema = new Schema({
   grade_level: { type: Number, required: true },
   class_num: { type: Number, required: true },
-  student_num: { type: Number, required: true }
-}));
+  student_num: { type: Number, required: true },
+});
+// Composite unique index — DB-level guard for concurrent batch inserts and idempotent retries.
+studentSchema.index({ grade_level: 1, class_num: 1, student_num: 1 }, { unique: true });
+
+export const StudentModel = UserModel.discriminator('STUDENT', studentSchema);
 
 export const ParentModel = UserModel.discriminator('PARENT', new Schema({
   phone_number: { type: String },

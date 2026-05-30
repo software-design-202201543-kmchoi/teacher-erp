@@ -6,3 +6,4 @@ export * from './demo-feedback.js';
 export * from './demo-counseling.js';
 export * from './grade-calc.js';
 export * from './demo-notifications.js';
+export * from './batch-validate.js';

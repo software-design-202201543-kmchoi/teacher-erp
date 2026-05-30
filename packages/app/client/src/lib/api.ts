@@ -181,6 +181,16 @@ export async function updateCounseling(
   })
 }
 
+// --- Students (batch) ---
+export async function batchCreateStudents(
+  students: import("@teacher-erp/shared-types").BatchStudentInput[]
+): Promise<import("@teacher-erp/shared-types").BatchCreateResponse> {
+  return request<import("@teacher-erp/shared-types").BatchCreateResponse>(
+    "/api/students/batch",
+    { method: "POST", body: JSON.stringify({ students }) }
+  )
+}
+
 // --- Notifications ---
 export async function getNotifications(): Promise<INotification[]> {
   return request<INotification[]>("/api/notifications")

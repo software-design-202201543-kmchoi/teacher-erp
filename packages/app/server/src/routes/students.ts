@@ -1,11 +1,17 @@
 import { Router } from "express"
 import type { IStudentUser } from "@teacher-erp/shared-types"
+import type { BatchStudentInput, BatchCreatedResult, BatchFailedResult } from "@teacher-erp/shared-types"
 import {
   demoUsers,
   demoUsersById,
   demoAcademicRecordsByStudentId,
+  validateBatchRow,
+  autoGenerateEmail,
+  generateTempPassword,
 } from "@teacher-erp/shared-utils"
 import { authenticate } from "../middleware/authenticate.js"
+import { demoAuthAccounts } from "../data/authAccounts.js"
+import { createNotification } from "../utils/createNotification.js"
 
 const router = Router()
 
@@ -135,6 +141,124 @@ router.put("/:id/academic-record", (req, res) => {
   record.updatedAt = new Date()
 
   res.json({ academicRecord: record })
+})
+
+const BATCH_MAX = 200
+
+// POST /batch — TEACHER only, partial-success (207)
+router.post("/batch", (req, res) => {
+  if (!req.ability || !req.authUser) {
+    res.status(401).json({ message: "Unauthenticated" })
+    return
+  }
+  if (req.authUser.role !== "TEACHER") {
+    res.status(403).json({ message: "Forbidden" })
+    return
+  }
+
+  const body = req.body as { students?: unknown }
+  if (!Array.isArray(body.students) || body.students.length === 0) {
+    res.status(400).json({ message: "students 배열이 필요합니다" })
+    return
+  }
+  if (body.students.length > BATCH_MAX) {
+    res.status(400).json({ message: `한 번에 최대 ${BATCH_MAX}명까지 등록할 수 있습니다` })
+    return
+  }
+
+  const inputs = body.students as BatchStudentInput[]
+  const created: BatchCreatedResult[] = []
+  const failed: BatchFailedResult[] = []
+
+  // Track duplicates within this request before touching the store
+  const seenKeys = new Set<string>()
+  const seenEmails = new Set<string>()
+
+  for (const input of inputs) {
+    const errors = validateBatchRow(input)
+    if (errors.length > 0) {
+      failed.push({ input, reason: errors.join(", ") })
+      continue
+    }
+
+    const gradeLevel = Number(input.grade_level)
+    const classNum = Number(input.class_num)
+    const studentNum = Number(input.student_num)
+
+    // Intra-request duplicate check (학번 조합)
+    const key = `${gradeLevel}-${classNum}-${studentNum}`
+    if (seenKeys.has(key)) {
+      failed.push({ input, reason: `요청 내 중복: ${gradeLevel}학년 ${classNum}반 ${studentNum}번` })
+      continue
+    }
+
+    const email = input.email?.trim() || autoGenerateEmail(gradeLevel, classNum, studentNum)
+    const emailLower = email.toLowerCase()
+
+    // Intra-request email duplicate check
+    if (seenEmails.has(emailLower)) {
+      failed.push({ input, reason: `요청 내 이메일 중복: ${email}` })
+      continue
+    }
+
+    // Store-level email duplicate check (equivalent to DB unique index on email)
+    if (demoUsers.some((u) => u.email.toLowerCase() === emailLower)) {
+      failed.push({ input, reason: `이미 사용 중인 이메일: ${email}` })
+      continue
+    }
+
+    // Store-level (학년, 반, 번호) unique check (equivalent to DB composite unique index)
+    if (
+      demoUsers.some(
+        (u) =>
+          u.role === "STUDENT" &&
+          (u as IStudentUser).grade_level === gradeLevel &&
+          (u as IStudentUser).class_num === classNum &&
+          (u as IStudentUser).student_num === studentNum
+      )
+    ) {
+      failed.push({ input, reason: `이미 등록된 학번: ${gradeLevel}학년 ${classNum}반 ${studentNum}번` })
+      continue
+    }
+
+    const tempPassword = input.password?.trim() || generateTempPassword()
+
+    const newStudent: IStudentUser = {
+      _id: `student-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      email,
+      name: input.name.trim(),
+      role: "STUDENT",
+      grade_level: gradeLevel,
+      class_num: classNum,
+      student_num: studentNum,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }
+
+    // Persist — each item is independent (best-effort partial, no all-or-nothing)
+    demoUsers.push(newStudent)
+    demoUsersById[newStudent._id] = newStudent
+    demoAuthAccounts.push({ role: "STUDENT", email, password: tempPassword, userId: newStudent._id })
+
+    seenKeys.add(key)
+    seenEmails.add(emailLower)
+    created.push({ student: newStudent, tempPassword })
+  }
+
+  // Best-effort summary notification — failure here must never block the response
+  if (created.length > 0) {
+    try {
+      createNotification(
+        req.authUser._id,
+        "학생 계정 일괄 등록 완료",
+        `${created.length}명 등록 완료${failed.length > 0 ? `, ${failed.length}명 실패` : ""}`
+      )
+    } catch (err) {
+      console.error("[batch-create] notification failed:", err)
+    }
+  }
+
+  res.status(207).json({ created, failed })
 })
 
 export default router

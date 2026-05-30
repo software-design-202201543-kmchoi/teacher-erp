@@ -13,7 +13,7 @@ const app = express()
 const port = Number(process.env.PORT ?? 3001)
 const clientOrigin = process.env.CLIENT_ORIGIN ?? "http://localhost:5173"
 
-app.use(express.json())
+app.use(express.json({ limit: "1mb" }))
 app.use(cookieParser())
 
 app.use((req, res, next) => {

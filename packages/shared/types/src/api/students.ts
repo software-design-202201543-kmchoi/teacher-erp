@@ -24,3 +24,27 @@ export interface UpdateAcademicRecordBody {
   };
   special_notes?: string;
 }
+
+export interface BatchStudentInput {
+  name: string;
+  grade_level: number;
+  class_num: number;
+  student_num: number;
+  email?: string;
+  password?: string;
+}
+
+export interface BatchCreatedResult {
+  student: IStudentUser;
+  tempPassword: string;
+}
+
+export interface BatchFailedResult {
+  input: BatchStudentInput;
+  reason: string;
+}
+
+export interface BatchCreateResponse {
+  created: BatchCreatedResult[];
+  failed: BatchFailedResult[];
+}
