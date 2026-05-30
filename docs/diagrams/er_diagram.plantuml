@@ -102,6 +102,32 @@ entity "Notification (알림)" as notification {
   created_at : DateTime
 }
 
+' ── 분석용 컬렉션 (OLAP) ───────────────────────────────────
+entity "StudentLearningSnapshot\n(학생별 학습 현황 스냅샷)" as student_snapshot {
+  * id : UUID
+  * student_id : UUID <<FK>>
+  --
+  term : String (학기, e.g. "2024-1")
+  avg_score : Float (전체 평균 점수)
+  overall_grade : String (종합 등급)
+  subject_scores : Array<{subject_id, name, score, grade}>
+  attendance_summary : String (출결 요약)
+  feedback_count : Int
+  counseling_count : Int
+  snapshot_at : DateTime (집계 시점)
+}
+
+entity "SubjectProgressSummary\n(과목별 진도 요약)" as subject_summary {
+  * id : UUID
+  * student_id : UUID <<FK>>
+  * subject_id : UUID <<FK>>
+  --
+  score_history : Array<{term, score, grade}>
+  avg_score : Float (해당 과목 평균)
+  trend : Enum(UP, DOWN, STABLE)
+  last_updated_at : DateTime
+}
+
 user ||--o| teacher
 user ||--o| student
 user ||--o| parent
@@ -124,4 +150,8 @@ student ||--o{ counseling
 teacher ||--o{ counseling
 
 user ||--o{ notification
+
+student ||--o{ student_snapshot
+student ||--o{ subject_summary
+subject ||--o{ subject_summary
 @enduml

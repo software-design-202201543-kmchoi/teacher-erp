@@ -7,7 +7,10 @@ import feedbackRouter from "./routes/feedback.js"
 import counselingRouter from "./routes/counseling.js"
 import reportsRouter from "./routes/reports.js"
 import notificationsRouter from "./routes/notifications.js"
+import analyticsRouter from "./routes/analytics.js"
 import { connectDB } from "./db.js"
+import { seedDatabase } from "./data/seed.js"
+import { startOlapPipeline } from "./workers/olap-pipeline.js"
 
 const app = express()
 const port = Number(process.env.PORT ?? 3001)
@@ -41,14 +44,20 @@ app.use("/api/feedback", feedbackRouter)
 app.use("/api/counseling", counselingRouter)
 app.use("/api/reports", reportsRouter)
 app.use("/api/notifications", notificationsRouter)
+app.use("/api/analytics", analyticsRouter)
 
 connectDB()
-  .then(() => {
+  .then(async () => {
+    // Seed demo data → bootstrap analytics → open Change Streams → start HTTP server.
+    // Order matters: Change Streams must open AFTER seeding to avoid processing
+    // thousands of seed events through the aggregation pipeline one-by-one.
+    await seedDatabase()
+    await startOlapPipeline()
     app.listen(port, () => {
       console.log(`Teacher ERP API listening on port ${port}`)
     })
   })
   .catch((err) => {
-    console.error("MongoDB connection failed:", err)
+    console.error("Startup failed:", err)
     process.exit(1)
   })

@@ -2,15 +2,31 @@ services:
   mongo:
     image: mongo:7
     restart: unless-stopped
+    # Run as a single-node Replica Set so the oplog is available for Change Streams.
+    # Why single-node RS instead of standalone: Change Streams require oplog, which
+    # only exists in Replica Set or sharded clusters. A single-node RS is the
+    # lightest configuration that satisfies this requirement without extra containers.
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
     volumes:
       - mongo_data:/data/db
     environment:
       MONGO_INITDB_DATABASE: teacher_erp
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      # On first start, rs.status() throws because the RS is not yet initiated.
+      # The catch block calls rs.initiate() once and succeeds; subsequent checks
+      # just confirm rs.status().ok === 1.
+      test:
+        - CMD
+        - mongosh
+        - --quiet
+        - --eval
+        - |
+          try { rs.status().ok }
+          catch(e) { rs.initiate({_id:'rs0',members:[{_id:0,host:'mongo:27017'}]}).ok }
       interval: 10s
-      timeout: 5s
-      retries: 5
+      timeout: 15s
+      retries: 10
+      start_period: 40s
 
   server:
     build:
@@ -20,7 +36,10 @@ services:
       - "3001:3001"
     environment:
       PORT: "3001"
-      MONGODB_URI: mongodb://mongo:27017/teacher_erp
+      # directConnection=true: driver connects to this node directly rather than
+      # performing SRV/RS-discovery. Required when the RS member hostname (mongo)
+      # is only resolvable inside the Docker network.
+      MONGODB_URI: mongodb://mongo:27017/teacher_erp?replicaSet=rs0&directConnection=true
       CLIENT_ORIGIN: http://localhost:5173
       JWT_SECRET: ${JWT_SECRET:-teacher-erp-dev-secret-change-in-production}
       AUTH_TOKEN_TTL_SECONDS: ${AUTH_TOKEN_TTL_SECONDS:-3600}

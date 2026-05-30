@@ -11,6 +11,7 @@ import { GradesPage } from "@/pages/GradesPage"
 import { FeedbackPage } from "@/pages/FeedbackPage"
 import { CounselingPage } from "@/pages/CounselingPage"
 import { NotificationsPage } from "@/pages/NotificationsPage"
+import { AnalyticsPage } from "@/pages/AnalyticsPage"
 
 export function App() {
   const { isAuthenticated, isLoading } = useAuth()
@@ -50,6 +51,16 @@ export function App() {
       <Route path="/students/:id/grades" element={<AppShell><GradesPage /></AppShell>} />
       <Route path="/students/:id/feedback" element={<AppShell><FeedbackPage /></AppShell>} />
       <Route path="/students/:id/counseling" element={<AppShell><CounselingPage /></AppShell>} />
+      <Route
+        path="/students/:id/analytics"
+        element={
+          <AppShell>
+            <ProtectedRoute action="read" subject="Student" subjectData={{ _id: "__list__" }}>
+              <AnalyticsPage />
+            </ProtectedRoute>
+          </AppShell>
+        }
+      />
       <Route
         path="/notifications"
         element={<AppShell><NotificationsPage /></AppShell>}

@@ -65,6 +65,41 @@ Student identity data is the core record. Grades, feedback, counseling, notifica
 - `shared/db`: Mongoose ORM type definitions.
 - `shared/utils`: Domain-free utilities (e.g., date formatting) that must be handled identically on both client and server.
 
+## Software design mindset
+
+This project is graded on **design quality**, not just working code. Every non-trivial structural decision must be defensible by comparison to realistic alternatives.
+
+### When proposing or implementing any architectural decision
+
+Before settling on an approach, explicitly consider at least two alternatives and state why the chosen approach wins for *this* project's constraints. Document the reasoning in the relevant sprint spec, ADR comment, or PR description — not buried inside the code.
+
+Questions to answer for every significant choice:
+
+1. **What alternatives exist?** Name them concretely (e.g. "polling vs. Change Streams vs. a dedicated message broker like Kafka/RabbitMQ").
+2. **What are the trade-offs of each?** Complexity, operational cost, latency, consistency guarantees, team familiarity.
+3. **Why does the chosen option fit *this* project?** Tie the answer to actual constraints: MongoDB Atlas already in use, no separate broker budget, small team, educational/demo context, required feature (e.g. Change Streams for OLAP pipeline satisfies the event-driven bonus criterion).
+4. **What would make you switch?** State the condition that would invalidate the choice (e.g. "if throughput exceeded X events/sec we would move to Kafka").
+
+### Levels of decision that require this treatment
+
+| Level | Examples | Where to record |
+|-------|----------|-----------------|
+| Architecture | Monorepo vs. polyrepo; OLAP same-DB vs. separate DB; REST vs. GraphQL | `docs/sprint-spec.md` background section or a new ADR file |
+| Data model | Embedding vs. referencing in MongoDB; snapshot vs. view-based aggregation | Schema file header comment or sprint spec |
+| Library/pattern | Change Streams vs. polling vs. Kafka; TanStack Query vs. SWR; CASL vs. custom RBAC | Sprint spec task description |
+| API shape | REST resource design; query param vs. path param; pagination strategy | Sprint spec or inline PR comment |
+
+### Things NOT to over-justify
+
+Choices already locked in the "Confirmed stack choices" section above do not need re-litigating unless a file in the repo explicitly reopens them. Routine implementation details (variable names, minor component structure) need no written rationale.
+
+### How this affects Claude's responses
+
+- When asked "how should we approach X?", lead with the 2–3 candidate approaches and their trade-offs before recommending one.
+- When writing new modules or schemas, add a brief comment if the structural choice is non-obvious (e.g. why a field is embedded rather than referenced).
+- When the user asks to implement something, flag if the chosen approach differs from what is already in `sprint-spec.md` and explain why.
+- Never introduce a new library or pattern silently. Name it, name the alternative, and state the reason in the response.
+
 ## Still undecided
 
 The repository does **not** currently define:

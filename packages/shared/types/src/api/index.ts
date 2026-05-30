@@ -6,3 +6,4 @@ export * from "./feedback.js";
 export * from "./counseling.js";
 export * from "./notifications.js";
 export * from "./reports.js";
+export * from "./analytics.js";

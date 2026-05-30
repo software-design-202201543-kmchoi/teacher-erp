@@ -207,3 +207,78 @@
 #### 9-C: pnpm 스크립트 정리
 - 루트 `package.json`에 `build`, `dev`, `lint`, `test:e2e` 스크립트
 - 각 앱 패키지에 `dev`, `build` 스크립트 확인/추가
+
+---
+
+## Sprint 10: OLAP 파이프라인 + 분석 대시보드
+
+### 배경
+운영 DB의 성적·피드백·상담·출결 데이터를 분석용 컬렉션으로 집계하여, 교사가 학생별·과목별 학습 현황을 대시보드에서 조회할 수 있어야 한다.
+MongoDB Change Streams를 이벤트 소스로 활용해 이벤트 기반 실시간 갱신을 구현하고, 배치 cron으로 보정 집계를 병행한다.
+
+### 태스크
+
+#### 10-A: 분석 스키마 확정 (shared-db)
+- `StudentLearningSnapshot`, `SubjectProgressSummary` 스키마 (`packages/shared/db/src/schemas/`) — 이미 추가됨
+- 두 모델을 `shared-db` index에서 export
+
+#### 10-B: OLAP 파이프라인 워커 (서버)
+- `packages/app/server/src/workers/olap-pipeline.ts` 신규
+- **Change Streams 리스너**: MongoDB Change Streams로 `grades`, `feedbacks`, `counselingrecords`, `academicrecords` 컬렉션 변경 감지
+  - `insert` / `update` / `replace` 이벤트 발생 시 해당 `student_id` + `term` 스냅샷을 즉시 재집계·upsert
+- **집계 함수** `aggregateStudentSnapshot(studentId, term)`:
+  - 해당 학기 성적 목록 → `avg_score`, `overall_grade`, `subject_scores` 계산 (`calcAverage`, `calcGrade` 재사용)
+  - 피드백 count, 상담 count, 출결 요약 수집
+  - `StudentLearningSnapshot` upsert
+- **집계 함수** `aggregateSubjectSummary(studentId, subjectId)`:
+  - 전 학기 점수 이력 → `score_history`, `avg_score`, `trend` 계산
+  - `SubjectProgressSummary` upsert
+- 워커는 서버 시작 시 `startOlapPipeline()` 호출로 Change Streams 구독 시작
+- **배치 cron** (`node-cron`): 매일 새벽 2시 전체 학생에 대해 전체 학기 재집계 실행 (누락 보정)
+
+#### 10-C: 분석 API (서버)
+- `GET /api/analytics/students/:id/snapshot?term=2024-1` — `StudentLearningSnapshot` 조회 (TEACHER만)
+- `GET /api/analytics/students/:id/subject-progress` — 전 과목 `SubjectProgressSummary` 배열 조회 (TEACHER만)
+- 두 엔드포인트 모두 분석 컬렉션에서만 읽고 운영 컬렉션에 직접 쿼리하지 않음
+
+#### 10-D: 분석 대시보드 UI (클라이언트)
+- `/students/:id/analytics` 페이지 (TEACHER 전용)
+- **요약 카드 행**: 전체 평균 점수, 종합 등급, 피드백 수, 상담 수
+- **레이더 차트** (Recharts `RadarChart`): 과목별 점수 (`subject_scores` 기반) — Sprint 4 컴포넌트 재활용
+- **선 차트** (`LineChart`): 과목별 점수 추세 (`score_history` 기반)
+- 학기 선택 탭: 탭 변경 시 TanStack Query `term` 쿼리 파라미터 갱신
+- 로딩 상태: shadcn/ui `Skeleton` 컴포넌트
+
+#### 10-E: E2E 시나리오 (Playwright)
+- `e2e/analytics.spec.ts`
+- 교사 로그인 → 성적 입력 → 분석 대시보드 진입 → 스냅샷 데이터 반영 확인
+- 학생 계정으로 `/students/:id/analytics` 접근 시 403 확인
+
+---
+
+## Sprint 11: AI 챗봇 (선택)
+
+### 배경
+분석 컬렉션에 집계된 학생별 학습 요약 데이터를 컨텍스트로 Claude API를 호출하여 교사가 자연어로 학생 현황을 질의할 수 있다.
+
+### 태스크
+
+#### 11-A: 챗봇 API (서버)
+- `POST /api/analytics/students/:id/chat` — TEACHER만, body: `{ message: string }`
+- 핸들러:
+  1. `StudentLearningSnapshot`(최근 2개 학기) + `SubjectProgressSummary` 조회
+  2. 집계 데이터를 구조화된 컨텍스트 문자열로 변환 (개인 식별 정보 포함 여부는 교사 권한 확인 후 결정)
+  3. Claude API (`claude-sonnet-4-6`) 호출: system prompt에 학생 데이터 컨텍스트, user message에 교사 질의
+  4. 응답 스트리밍 또는 단일 응답 반환
+- 환경 변수: `ANTHROPIC_API_KEY`
+
+#### 11-B: 챗봇 UI (클라이언트)
+- 분석 대시보드(`/students/:id/analytics`) 하단에 챗봇 패널 추가
+- 채팅 입력창 + 메시지 버블 목록 (교사 질의 / AI 응답)
+- 전송 중 로딩 인디케이터
+- 대화 히스토리는 세션 내 Zustand 상태로 관리 (서버에 저장하지 않음)
+
+#### 11-C: E2E 시나리오 (Playwright)
+- `e2e/chatbot.spec.ts`
+- 교사 로그인 → 분석 대시보드 → 챗봇 질의 입력 → AI 응답 수신 확인
+- 학생 계정으로 챗봇 엔드포인트 직접 호출 시 403 확인

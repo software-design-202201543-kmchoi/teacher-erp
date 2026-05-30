@@ -203,3 +203,29 @@ export async function markNotificationRead(id: string): Promise<INotification> {
 export async function markAllNotificationsRead(): Promise<{ ok: boolean }> {
   return request<{ ok: boolean }>("/api/notifications/read-all", { method: "POST" })
 }
+
+// --- Analytics ---
+export async function getAnalyticsSnapshot(
+  studentId: string,
+  term: string
+): Promise<import("@teacher-erp/shared-types").StudentLearningSnapshot> {
+  return request<import("@teacher-erp/shared-types").StudentLearningSnapshot>(
+    `/api/analytics/students/${studentId}/snapshot?term=${encodeURIComponent(term)}`
+  )
+}
+
+export async function getAnalyticsAllSnapshots(
+  studentId: string
+): Promise<import("@teacher-erp/shared-types").StudentLearningSnapshot[]> {
+  return request<import("@teacher-erp/shared-types").StudentLearningSnapshot[]>(
+    `/api/analytics/students/${studentId}/snapshot`
+  )
+}
+
+export async function getAnalyticsSubjectProgress(
+  studentId: string
+): Promise<import("@teacher-erp/shared-types").SubjectProgressSummary[]> {
+  return request<import("@teacher-erp/shared-types").SubjectProgressSummary[]>(
+    `/api/analytics/students/${studentId}/subject-progress`
+  )
+}

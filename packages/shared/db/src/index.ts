@@ -7,3 +7,5 @@ export * from './schemas/counseling.js';
 export * from './schemas/notification.js';
 export * from './schemas/parent-student.js';
 export * from './schemas/teacher-subject.js';
+export * from './schemas/student-learning-snapshot.js';
+export * from './schemas/subject-progress-summary.js';
