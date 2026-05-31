@@ -117,7 +117,9 @@ export function StudentDetailPage() {
         <Link to={`/students/${id}`} className="border-b-2 border-primary px-4 py-2 text-sm font-medium text-primary">학생부</Link>
         <Link to={`/students/${id}/grades`} className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">성적</Link>
         <Link to={`/students/${id}/feedback`} className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">피드백</Link>
-        <Link to={`/students/${id}/counseling`} className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">상담</Link>
+        {user?.role !== "PARENT" && (
+          <Link to={`/students/${id}/counseling`} className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">상담</Link>
+        )}
         {user?.role === "TEACHER" && (
           <Link to={`/students/${id}/analytics`} className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">분석</Link>
         )}

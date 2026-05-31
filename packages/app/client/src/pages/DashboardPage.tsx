@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom"
 import { useQuery } from "@tanstack/react-query"
 import { useAuth } from "@/hooks/useAuth"
-import { getStudents, getNotifications, getGrades, getFeedback } from "@/lib/api"
+import { getStudents, getNotifications, getGrades, getFeedback, getStudent } from "@/lib/api"
+import type { IParentUser, IStudentUser } from "@teacher-erp/shared-types"
 
 function QuickCard({
   title,
@@ -26,6 +27,66 @@ function QuickCard({
   )
 }
 
+function ChildCard({ childId }: { childId: string }) {
+  const { data: child } = useQuery({
+    queryKey: ["student", childId],
+    queryFn: () => getStudent(childId),
+  })
+  const { data: grades = [] } = useQuery({
+    queryKey: ["grades", childId],
+    queryFn: () => getGrades(childId),
+  })
+  const { data: feedbacks = [] } = useQuery({
+    queryKey: ["feedback", childId],
+    queryFn: () => getFeedback(childId),
+  })
+
+  const visibleFeedbackCount = feedbacks.filter(
+    (f) => f.visibility === "PARENT" || f.visibility === "ALL",
+  ).length
+
+  return (
+    <section className="rounded-xl border bg-card p-5 shadow-sm">
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <h3 className="font-semibold">
+            {child ? child.name : "자녀"}
+          </h3>
+          {child && (
+            <p className="text-xs text-muted-foreground">
+              {child.grade_level}학년 {child.class_num}반 {child.student_num}번
+            </p>
+          )}
+        </div>
+        <Link
+          to={`/students/${childId}`}
+          className="text-xs text-primary hover:underline"
+        >
+          학생부 보기 →
+        </Link>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <Link
+          to={`/students/${childId}/grades`}
+          className="flex flex-col gap-0.5 rounded-lg border bg-muted/30 p-3 hover:bg-muted/60 transition-colors"
+        >
+          <p className="text-xs text-muted-foreground">성적 기록</p>
+          <p className="text-xl font-bold">{grades.length}</p>
+          <p className="text-xs text-muted-foreground">성적 보기 →</p>
+        </Link>
+        <Link
+          to={`/students/${childId}/feedback`}
+          className="flex flex-col gap-0.5 rounded-lg border bg-muted/30 p-3 hover:bg-muted/60 transition-colors"
+        >
+          <p className="text-xs text-muted-foreground">공개 피드백</p>
+          <p className="text-xl font-bold">{visibleFeedbackCount}</p>
+          <p className="text-xs text-muted-foreground">피드백 보기 →</p>
+        </Link>
+      </div>
+    </section>
+  )
+}
+
 export function DashboardPage() {
   const { user, logout } = useAuth()
 
@@ -45,8 +106,7 @@ export function DashboardPage() {
     enabled: Boolean(user),
   })
 
-  // For STUDENT/PARENT: load own grades/feedback
-  const ownStudentId = isStudent ? user?._id : undefined
+  const ownStudentId = isStudent ? (user as IStudentUser)._id : undefined
 
   const { data: ownGrades = [] } = useQuery({
     queryKey: ["grades", ownStudentId],
@@ -60,6 +120,7 @@ export function DashboardPage() {
     enabled: Boolean(ownStudentId),
   })
 
+  const childrenIds = isParent ? (user as IParentUser).children : []
   const unread = notifications.filter((n) => !n.is_read).length
 
   if (!user) return null
@@ -102,8 +163,6 @@ export function DashboardPage() {
               to="/students"
             />
           </div>
-
-          {/* 최근 학생 목록 */}
           {studentsData && studentsData.students.length > 0 && (
             <section className="rounded-xl border bg-card p-6 shadow-sm">
               <div className="mb-3 flex items-center justify-between">
@@ -169,20 +228,21 @@ export function DashboardPage() {
       {/* 학부모 대시보드 */}
       {isParent && (
         <>
-          <h2 className="text-base font-semibold text-muted-foreground">자녀 현황</h2>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-semibold text-muted-foreground">자녀 현황</h2>
             <QuickCard
               title="미읽음 알림"
               value={unread}
-              sub="성적·피드백 업데이트"
+              sub="알림 확인"
               to="/notifications"
             />
           </div>
-          <section className="rounded-xl border bg-card p-5 shadow-sm">
-            <p className="text-sm text-muted-foreground">
-              자녀의 성적과 피드백 정보는 알림을 통해 확인하거나, 담당 교사로부터 공유받은 정보를 알림에서 확인하세요.
-            </p>
-          </section>
+          {childrenIds.map((childId) => (
+            <ChildCard key={childId} childId={childId} />
+          ))}
+          {childrenIds.length === 0 && (
+            <p className="text-sm text-muted-foreground">등록된 자녀 정보가 없습니다.</p>
+          )}
         </>
       )}
 

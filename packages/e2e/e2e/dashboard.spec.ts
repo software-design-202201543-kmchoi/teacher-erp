@@ -69,16 +69,40 @@ test.describe("대시보드 — 학생", () => {
 test.describe("대시보드 — 학부모", () => {
   test.use({ storageState: parentAuth })
 
-  test("학부모: 미읽음 알림 카드 표시", async ({ page }) => {
+  test("학부모: 자녀 현황 카드 및 성적/피드백 링크 표시", async ({ page }) => {
     await page.goto("/")
     await page.waitForLoadState("networkidle")
     await expect(page.getByText("parent1@school.local")).toBeVisible()
-    await expect(page.getByText("미읽음 알림")).toBeVisible()
+    await expect(page.getByText("자녀 현황")).toBeVisible()
+    await expect(page.getByText("성적 기록")).toBeVisible()
+    await expect(page.getByText("공개 피드백")).toBeVisible()
+  })
+
+  test("학부모: 자녀 성적 페이지로 이동 가능", async ({ page }) => {
+    await page.goto("/")
+    await page.waitForLoadState("networkidle")
+    await page.getByText("성적 기록").click()
+    await expect(page).toHaveURL(/\/students\/.+\/grades/)
+  })
+
+  test("학부모: 자녀 피드백 페이지에서 공개 피드백만 표시", async ({ page }) => {
+    await page.goto("/students/student-1/feedback")
+    await page.waitForLoadState("networkidle")
+    await expect(page.getByText("피드백 작성")).not.toBeVisible()
+    // PRIVATE 피드백은 API 레벨에서 필터됨
+    await expect(page.getByText("비공개")).not.toBeVisible()
   })
 
   test("학부모: '담당 학생' 카드 미노출", async ({ page }) => {
     await page.goto("/")
     await page.waitForLoadState("networkidle")
     await expect(page.getByText("담당 학생")).not.toBeVisible()
+  })
+
+  test("학부모: 사이드바에 자녀 성적·피드백 링크 표시", async ({ page }) => {
+    await page.goto("/")
+    await page.waitForLoadState("networkidle")
+    await expect(page.getByRole("link", { name: /자녀 성적/ })).toBeVisible()
+    await expect(page.getByRole("link", { name: /자녀 피드백/ })).toBeVisible()
   })
 })

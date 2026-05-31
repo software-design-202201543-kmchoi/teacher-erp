@@ -1,22 +1,14 @@
 import { NavLink, useNavigate } from "react-router-dom"
 import { useAuth } from "@/hooks/useAuth"
 import type { ReactNode } from "react"
+import { useMemo } from "react"
+import type { IParentUser, IStudentUser } from "@teacher-erp/shared-types"
 
 type NavItem = { label: string; to: string; icon: string }
 
 const teacherNav: NavItem[] = [
   { label: "대시보드", to: "/", icon: "🏠" },
   { label: "학생 목록", to: "/students", icon: "👥" },
-  { label: "알림", to: "/notifications", icon: "🔔" },
-]
-
-const studentNav: NavItem[] = [
-  { label: "대시보드", to: "/", icon: "🏠" },
-  { label: "알림", to: "/notifications", icon: "🔔" },
-]
-
-const parentNav: NavItem[] = [
-  { label: "대시보드", to: "/", icon: "🏠" },
   { label: "알림", to: "/notifications", icon: "🔔" },
 ]
 
@@ -28,15 +20,37 @@ export function AppShell({ children }: AppShellProps) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
 
+  const navItems = useMemo<NavItem[]>(() => {
+    if (!user) return []
+    if (user.role === "TEACHER") return teacherNav
+    if (user.role === "STUDENT") {
+      const studentId = (user as IStudentUser)._id
+      return [
+        { label: "대시보드", to: "/", icon: "🏠" },
+        { label: "성적", to: `/students/${studentId}/grades`, icon: "📊" },
+        { label: "피드백", to: `/students/${studentId}/feedback`, icon: "💬" },
+        { label: "알림", to: "/notifications", icon: "🔔" },
+      ]
+    }
+    // PARENT: 자녀별 성적·피드백 링크
+    const children = (user as IParentUser).children
+    const items: NavItem[] = [{ label: "대시보드", to: "/", icon: "🏠" }]
+    children.forEach((childId, i) => {
+      const suffix = children.length > 1 ? ` ${i + 1}` : ""
+      items.push(
+        { label: `자녀 학생부${suffix}`, to: `/students/${childId}`, icon: "📋" },
+        { label: `자녀 성적${suffix}`, to: `/students/${childId}/grades`, icon: "📊" },
+        { label: `자녀 피드백${suffix}`, to: `/students/${childId}/feedback`, icon: "💬" },
+      )
+    })
+    items.push({ label: "알림", to: "/notifications", icon: "🔔" })
+    return items
+  }, [user])
+
   if (!user) {
     void navigate("/login", { replace: true })
     return null
   }
-
-  const navItems =
-    user.role === "TEACHER" ? teacherNav
-    : user.role === "STUDENT" ? studentNav
-    : parentNav
 
   const sidebarLinkClass = ({ isActive }: { isActive: boolean }) =>
     `flex items-center gap-2 px-3 py-2 text-sm transition-colors rounded-md ${
