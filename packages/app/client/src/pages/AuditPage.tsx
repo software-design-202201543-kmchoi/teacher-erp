@@ -70,7 +70,7 @@ function AuditEntry({ entry, expanded, onToggle }: {
     <div className="rounded-xl border bg-card shadow-sm">
       <button
         onClick={onToggle}
-        className="flex w-full items-start gap-3 px-4 py-3 text-left"
+        className="flex w-full flex-wrap items-start gap-2 px-4 py-3 text-left sm:flex-nowrap sm:gap-3"
       >
         <span className={`mt-0.5 shrink-0 rounded px-2 py-0.5 text-xs font-semibold ${op.color}`}>
           {op.label}
@@ -118,7 +118,7 @@ export function AuditPage() {
 
   return (
     <main className="mx-auto flex min-h-svh w-full max-w-4xl flex-col gap-6 p-6">
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
           ← 뒤로가기
         </Button>

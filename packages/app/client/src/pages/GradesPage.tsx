@@ -125,13 +125,13 @@ export function GradesPage() {
   return (
     <main className="mx-auto flex min-h-svh w-full max-w-4xl flex-col gap-6 p-6">
       {/* 헤더 */}
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
           ← 뒤로가기
         </Button>
         <h1 className="text-2xl font-semibold">학생 성적 관리</h1>
         {isTeacher && (
-          <div className="ml-auto">
+          <div className="w-full sm:ml-auto sm:w-auto">
             <DialogRoot open={gradeModalOpen} onOpenChange={setGradeModalOpen}>
               <DialogTrigger asChild>
                 <Button size="sm">성적 추가</Button>
@@ -232,7 +232,7 @@ export function GradesPage() {
               등록된 성적이 없습니다.
             </p>
           ) : (
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[640px] text-sm">
               <thead>
                 <tr className="border-b bg-muted/50 text-left text-muted-foreground">
                   <th className="px-4 py-3 font-medium">과목</th>

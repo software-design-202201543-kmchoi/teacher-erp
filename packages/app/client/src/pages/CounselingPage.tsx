@@ -94,12 +94,12 @@ export function CounselingPage() {
 
   return (
     <main className="mx-auto flex min-h-svh w-full max-w-4xl flex-col gap-6 p-6">
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <Button variant="ghost" size="sm" onClick={() => navigate(`/students/${studentId}`)}>
           ← 돌아가기
         </Button>
         <h1 className="text-2xl font-semibold">상담 내역</h1>
-        <div className="ml-auto">
+        <div className="w-full sm:ml-auto sm:w-auto">
           <DialogRoot open={counselingModalOpen} onOpenChange={setCounselingModalOpen}>
             <DialogTrigger asChild>
               <Button size="sm">상담 기록 추가</Button>
@@ -147,17 +147,17 @@ export function CounselingPage() {
 
       <section className="rounded-xl border bg-card p-4 shadow-sm">
         <form className="flex flex-wrap items-end gap-3" onSubmit={handleFilterSubmit}>
-          <label className="space-y-1">
+          <label className="w-full space-y-1 sm:w-auto">
             <span className="text-xs font-medium">시작일</span>
             <input type="date" className="block rounded-md border bg-background px-3 py-1.5 text-sm"
               value={filterFrom} onChange={(e) => setFilterFrom(e.target.value)} />
           </label>
-          <label className="space-y-1">
+          <label className="w-full space-y-1 sm:w-auto">
             <span className="text-xs font-medium">종료일</span>
             <input type="date" className="block rounded-md border bg-background px-3 py-1.5 text-sm"
               value={filterTo} onChange={(e) => setFilterTo(e.target.value)} />
           </label>
-          <label className="space-y-1">
+          <label className="w-full space-y-1 sm:w-auto">
             <span className="text-xs font-medium">키워드</span>
             <input type="text" className="block rounded-md border bg-background px-3 py-1.5 text-sm"
               placeholder="내용 검색..." value={filterKeyword} onChange={(e) => setFilterKeyword(e.target.value)} />
@@ -179,7 +179,7 @@ export function CounselingPage() {
         )}
         {records.map((r: ICounselingRecord) => (
           <div key={r._id} className="rounded-xl border bg-card p-4 shadow-sm">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <span className="text-sm font-medium">
                 {new Date(r.counsel_date).toLocaleDateString("ko-KR")}
               </span>

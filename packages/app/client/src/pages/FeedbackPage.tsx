@@ -105,13 +105,13 @@ export function FeedbackPage() {
 
   return (
     <main className="mx-auto flex min-h-svh w-full max-w-4xl flex-col gap-6 p-6">
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <Button variant="ghost" size="sm" onClick={() => navigate(`/students/${studentId}`)}>
           ← 돌아가기
         </Button>
         <h1 className="text-2xl font-semibold">피드백</h1>
         {user?.role === "TEACHER" && (
-          <div className="ml-auto">
+          <div className="w-full sm:ml-auto sm:w-auto">
             <DialogRoot open={feedbackModalOpen} onOpenChange={setFeedbackModalOpen}>
               <DialogTrigger asChild>
                 <Button size="sm">피드백 작성</Button>
@@ -121,7 +121,7 @@ export function FeedbackPage() {
                   <DialogTitle>피드백 작성</DialogTitle>
                 </DialogHeader>
                 <form className="space-y-4 pt-2" onSubmit={handleSubmit}>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <label className="block space-y-1">
                       <span className="text-sm font-medium">유형</span>
                       <select
@@ -186,7 +186,7 @@ export function FeedbackPage() {
             {editingFb?._id === fb._id ? (
               /* 인라인 편집 폼 */
               <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <label className="block space-y-1">
                     <span className="text-xs font-medium text-muted-foreground">유형</span>
                     <select
@@ -229,7 +229,7 @@ export function FeedbackPage() {
               </div>
             ) : (
               <>
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-700">
                       {fb.type}

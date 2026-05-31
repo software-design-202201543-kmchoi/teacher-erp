@@ -129,7 +129,7 @@ export function StudentDetailPage() {
       {/* 기본 정보 카드 */}
       <section className="rounded-xl border bg-card p-6 shadow-sm">
         <h1 className="text-2xl font-semibold">{student.name}</h1>
-        <div className="mt-3 grid grid-cols-3 gap-4 text-sm">
+        <div className="mt-3 grid grid-cols-1 gap-3 text-sm sm:grid-cols-3">
           <div>
             <p className="text-muted-foreground">학년</p>
             <p className="font-medium">{student.grade_level}학년</p>
@@ -146,7 +146,7 @@ export function StudentDetailPage() {
       </section>
 
       {/* 하위 탭 네비게이션 */}
-      <nav className="flex gap-1 border-b">
+      <nav className="flex gap-1 overflow-x-auto border-b pb-1">
         <Link to={`/students/${id}`} className="border-b-2 border-primary px-4 py-2 text-sm font-medium text-primary">학생부</Link>
         <Link to={`/students/${id}/grades`} className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">성적</Link>
         <Link to={`/students/${id}/feedback`} className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">피드백</Link>
@@ -184,7 +184,7 @@ export function StudentDetailPage() {
             <div>
               <p className="text-sm font-medium text-muted-foreground mb-1">출결</p>
               {isEditing ? (
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                   {(
                     [
                       { label: "결석", value: absences, setter: setAbsences },
@@ -269,7 +269,7 @@ export function StudentDetailPage() {
           ) : (parentsData?.parents.length ?? 0) > 0 ? (
             <ul className="mb-4 flex flex-col gap-2">
               {parentsData!.parents.map((p) => (
-                <li key={p._id} className="flex items-center justify-between rounded-lg border bg-muted/30 px-4 py-2.5 text-sm">
+                <li key={p._id} className="flex flex-col gap-2 rounded-lg border bg-muted/30 px-4 py-2.5 text-sm sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <span className="font-medium">{p.name}</span>
                     <span className="ml-2 text-xs text-muted-foreground">{p.email}</span>

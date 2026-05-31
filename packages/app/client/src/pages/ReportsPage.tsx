@@ -142,7 +142,7 @@ export function ReportsPage() {
   return (
     <main className="mx-auto flex min-h-svh w-full max-w-4xl flex-col gap-6 p-6">
       {/* 헤더 */}
-      <div className="flex items-center justify-between print:hidden">
+      <div className="flex flex-col gap-3 print:hidden sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
             ← 뒤로가기
@@ -151,7 +151,7 @@ export function ReportsPage() {
             {studentName ? `${studentName} — 보고서` : "보고서"}
           </h1>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={handlePdfDownload}>
             PDF 저장
           </Button>
@@ -162,7 +162,7 @@ export function ReportsPage() {
       </div>
 
       {/* 탭 */}
-      <nav className="flex gap-1 border-b print:hidden">
+      <nav className="flex gap-1 overflow-x-auto border-b pb-1 print:hidden">
         {(["grades", "counseling", "feedback"] as Tab[]).map((tab) => (
           <button
             key={tab}
@@ -189,11 +189,11 @@ export function ReportsPage() {
         {/* 성적 보고서 */}
         {(activeTab === "grades") && gradeReport && (
           <section className="rounded-xl border bg-card p-6 shadow-sm">
-            <div className="mb-4 flex items-center justify-between">
+            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <h2 className="text-lg font-semibold">성적 보고서</h2>
               <p className="text-xs text-muted-foreground">생성: {new Date(gradeReport.generatedAt).toLocaleDateString("ko-KR")}</p>
             </div>
-            <div className="mb-4 flex gap-6 text-sm">
+            <div className="mb-4 flex flex-wrap gap-3 text-sm sm:gap-6">
               <span>전체 평균: <strong>{gradeReport.allTimeAverage.toFixed(1)}점</strong></span>
               <span>총 과목 수: <strong>{gradeReport.totalSubjects}개</strong></span>
             </div>
@@ -205,7 +205,8 @@ export function ReportsPage() {
                     평균 {ts.average.toFixed(1)}점 / {ts.overallGrade}등급
                   </span>
                 </div>
-                <table className="w-full text-sm border-collapse">
+                <div className="overflow-x-auto">
+                <table className="w-full min-w-[420px] border-collapse text-sm">
                   <thead>
                     <tr className="border-b bg-muted/50">
                       <th className="px-3 py-2 text-left font-medium">과목</th>
@@ -230,6 +231,7 @@ export function ReportsPage() {
                     </tr>
                   </tfoot>
                 </table>
+                </div>
               </div>
             ))}
           </section>
@@ -238,11 +240,11 @@ export function ReportsPage() {
         {/* 상담 보고서 */}
         {(activeTab === "counseling") && counselingReport && (
           <section className="rounded-xl border bg-card p-6 shadow-sm">
-            <div className="mb-4 flex items-center justify-between">
+            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <h2 className="text-lg font-semibold">상담 보고서</h2>
               <p className="text-xs text-muted-foreground">생성: {new Date(counselingReport.generatedAt).toLocaleDateString("ko-KR")}</p>
             </div>
-            <div className="mb-4 flex gap-6 text-sm">
+            <div className="mb-4 flex flex-wrap gap-3 text-sm sm:gap-6">
               <span>총 상담 횟수: <strong>{counselingReport.totalSessions}회</strong></span>
               <span>공유 상담: <strong>{counselingReport.sharedSessions}회</strong></span>
             </div>
@@ -271,15 +273,15 @@ export function ReportsPage() {
         {/* 피드백 요약 */}
         {(activeTab === "feedback") && feedbackReport && (
           <section className="rounded-xl border bg-card p-6 shadow-sm">
-            <div className="mb-4 flex items-center justify-between">
+            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <h2 className="text-lg font-semibold">피드백 요약</h2>
               <p className="text-xs text-muted-foreground">생성: {new Date(feedbackReport.generatedAt).toLocaleDateString("ko-KR")}</p>
             </div>
-            <div className="mb-4 flex gap-6 text-sm">
+            <div className="mb-4 flex flex-wrap gap-3 text-sm sm:gap-6">
               <span>총 피드백: <strong>{feedbackReport.totalFeedbacks}건</strong></span>
             </div>
 
-            <div className="mb-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
               {Object.entries(feedbackReport.byType).map(([type, count]) => (
                 <div key={type} className="rounded-lg border bg-muted/30 p-3 text-center">
                   <p className="text-xs text-muted-foreground capitalize">{type}</p>
