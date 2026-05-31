@@ -228,8 +228,7 @@ export function DashboardPage() {
       {/* 학부모 대시보드 */}
       {isParent && (
         <>
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold text-muted-foreground">자녀 현황</h2>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             <QuickCard
               title="미읽음 알림"
               value={unread}
@@ -237,6 +236,7 @@ export function DashboardPage() {
               to="/notifications"
             />
           </div>
+          <h2 className="text-base font-semibold text-muted-foreground">자녀 현황</h2>
           {childrenIds.map((childId) => (
             <ChildCard key={childId} childId={childId} />
           ))}
