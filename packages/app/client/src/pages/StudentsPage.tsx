@@ -39,8 +39,8 @@ export function StudentsPage() {
 
   return (
     <main className="mx-auto flex min-h-svh w-full max-w-4xl flex-col gap-6 p-6">
-      <section className="rounded-xl border bg-card p-6 shadow-sm">
-        <div className="flex items-center justify-between">
+      <section className="rounded-xl border bg-card p-4 shadow-sm md:p-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold">학생 목록</h1>
             <p className="mt-1 text-sm text-muted-foreground">전체 학생 {students.length}명</p>
@@ -53,8 +53,8 @@ export function StudentsPage() {
         </div>
       </section>
 
-      <section className="rounded-xl border bg-card shadow-sm overflow-hidden">
-        <table className="w-full text-sm">
+      <section className="overflow-x-auto rounded-xl border bg-card shadow-sm">
+        <table className="w-full min-w-[520px] text-sm">
           <thead className="border-b bg-muted/50">
             <tr>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">이름</th>
