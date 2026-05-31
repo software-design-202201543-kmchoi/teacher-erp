@@ -14,21 +14,40 @@ import type {
   FeedbackReportResponse,
   GradeReportResponse,
   GradeReportTermSummary,
+  IParentUser,
   IStudentUser,
   StudentScopedParams,
 } from "@teacher-erp/shared-types";
 import { authenticate } from "../middleware/authenticate.js";
+import { writeSecurityEvent } from "../utils/securityEvent.js";
 
 const router = Router();
 
+function canReadStudentScopedReport(user: { role: string; _id: string }, studentId: string): boolean {
+  if (user.role === "TEACHER") return true;
+  if (user.role === "STUDENT") return user._id === studentId;
+  if (user.role === "PARENT") return (user as unknown as IParentUser).children.includes(studentId);
+  return false;
+}
+
 // GET /api/reports/student/:studentId/grades
-// 학생 성적 분석 보고서 JSON — TEACHER 전용
+// 학생 성적 분석 보고서 JSON — role-based
 const getGradeReport: RequestHandler<
   StudentScopedParams,
   GradeReportResponse | ApiErrorResponse
 > = (req, res) => {
   const user = req.authUser!;
-  if (user.role !== "TEACHER") {
+  if (!canReadStudentScopedReport(user, req.params.studentId)) {
+    void writeSecurityEvent({
+      type: "authz_denied",
+      actor_id: user._id,
+      method: req.method,
+      path: req.originalUrl,
+      status: 403,
+      ip: req.ip ?? "",
+      user_agent: req.get("user-agent") ?? "",
+      details: { report: "grades", studentId: req.params.studentId },
+    })
     res.status(403).json({ message: "Forbidden" });
     return;
   }
@@ -81,13 +100,23 @@ const getGradeReport: RequestHandler<
 router.get("/student/:studentId/grades", authenticate, getGradeReport as unknown as RequestHandler);
 
 // GET /api/reports/student/:studentId/counseling
-// 상담 내역 보고서 JSON — TEACHER 전용
+// 상담 내역 보고서 JSON — TEACHER only
 const getCounselingReport: RequestHandler<
   StudentScopedParams,
   CounselingReportResponse | ApiErrorResponse
 > = (req, res) => {
   const user = req.authUser!;
   if (user.role !== "TEACHER") {
+    void writeSecurityEvent({
+      type: "authz_denied",
+      actor_id: user._id,
+      method: req.method,
+      path: req.originalUrl,
+      status: 403,
+      ip: req.ip ?? "",
+      user_agent: req.get("user-agent") ?? "",
+      details: { report: "counseling", studentId: req.params.studentId },
+    })
     res.status(403).json({ message: "Forbidden" });
     return;
   }
@@ -119,13 +148,23 @@ const getCounselingReport: RequestHandler<
 router.get("/student/:studentId/counseling", authenticate, getCounselingReport as unknown as RequestHandler);
 
 // GET /api/reports/student/:studentId/feedback
-// 피드백 요약 보고서 JSON — TEACHER 전용
+// 피드백 요약 보고서 JSON — role-based visibility
 const getFeedbackReport: RequestHandler<
   StudentScopedParams,
   FeedbackReportResponse | ApiErrorResponse
 > = (req, res) => {
   const user = req.authUser!;
-  if (user.role !== "TEACHER") {
+  if (!canReadStudentScopedReport(user, req.params.studentId)) {
+    void writeSecurityEvent({
+      type: "authz_denied",
+      actor_id: user._id,
+      method: req.method,
+      path: req.originalUrl,
+      status: 403,
+      ip: req.ip ?? "",
+      user_agent: req.get("user-agent") ?? "",
+      details: { report: "feedback", studentId: req.params.studentId },
+    })
     res.status(403).json({ message: "Forbidden" });
     return;
   }
@@ -137,7 +176,12 @@ const getFeedbackReport: RequestHandler<
     return;
   }
 
-  const feedbacks = demoFeedbackByStudentId[studentId] ?? [];
+  let feedbacks = demoFeedbackByStudentId[studentId] ?? [];
+  if (user.role === "STUDENT") {
+    feedbacks = feedbacks.filter((f) => f.visibility === "STUDENT" || f.visibility === "ALL");
+  } else if (user.role === "PARENT") {
+    feedbacks = feedbacks.filter((f) => f.visibility === "PARENT" || f.visibility === "ALL");
+  }
   const byType = feedbacks.reduce<Record<string, number>>((acc, f) => {
     acc[f.type] = (acc[f.type] ?? 0) + 1;
     return acc;

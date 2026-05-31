@@ -19,16 +19,9 @@ export function ReportsPage() {
   const { id: studentId = "" } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { user } = useAuth()
+  const canViewCounseling = user?.role === "TEACHER"
 
   const [activeTab, setActiveTab] = useState<Tab>("grades")
-
-  if (user?.role !== "TEACHER") {
-    return (
-      <main className="mx-auto flex min-h-svh w-full max-w-4xl flex-col gap-6 p-6">
-        <p className="text-sm text-destructive">보고서 페이지는 교사만 접근할 수 있습니다.</p>
-      </main>
-    )
-  }
 
   const { data: gradeReport, isLoading: gradeLoading } = useQuery({
     queryKey: ["report-grades", studentId],
@@ -39,7 +32,7 @@ export function ReportsPage() {
   const { data: counselingReport, isLoading: counselingLoading } = useQuery({
     queryKey: ["report-counseling", studentId],
     queryFn: () => getCounselingReport(studentId),
-    enabled: Boolean(studentId),
+    enabled: Boolean(studentId) && canViewCounseling,
   })
 
   const { data: feedbackReport, isLoading: feedbackLoading } = useQuery({
@@ -51,7 +44,7 @@ export function ReportsPage() {
   const studentName = gradeReport?.student.name ?? counselingReport?.student.name ?? feedbackReport?.student.name ?? ""
 
   async function handlePdfDownload() {
-    if (!gradeReport || !counselingReport || !feedbackReport) return
+    if (!gradeReport || !feedbackReport) return
 
     const styles = StyleSheet.create({
       page: { padding: 24, fontSize: 10, lineHeight: 1.5 },
@@ -80,13 +73,17 @@ export function ReportsPage() {
             </View>
           ))}
 
-          <Text style={styles.sectionTitle}>상담 보고서</Text>
-          <Text style={styles.summary}>
-            총 상담 {counselingReport.totalSessions}회 / 공유 {counselingReport.sharedSessions}회
-          </Text>
-          {counselingReport.records.map((r) => (
-            <Text key={r._id}>· {r.counsel_date} {r.is_shared ? "[공유]" : ""} {r.content}</Text>
-          ))}
+          {counselingReport && (
+            <>
+              <Text style={styles.sectionTitle}>상담 보고서</Text>
+              <Text style={styles.summary}>
+                총 상담 {counselingReport.totalSessions}회 / 공유 {counselingReport.sharedSessions}회
+              </Text>
+              {counselingReport.records.map((r) => (
+                <Text key={r._id}>· {r.counsel_date} {r.is_shared ? "[공유]" : ""} {r.content}</Text>
+              ))}
+            </>
+          )}
 
           <Text style={styles.sectionTitle}>피드백 요약</Text>
           <Text style={styles.summary}>
@@ -137,7 +134,7 @@ export function ReportsPage() {
     XLSX.writeFile(wb, `${studentName || studentId}_성적보고서.xlsx`)
   }
 
-  const isLoading = gradeLoading || counselingLoading || feedbackLoading
+  const isLoading = gradeLoading || feedbackLoading || (canViewCounseling && counselingLoading)
 
   return (
     <main className="mx-auto flex min-h-svh w-full max-w-4xl flex-col gap-6 p-6">
@@ -163,7 +160,7 @@ export function ReportsPage() {
 
       {/* 탭 */}
       <nav className="flex gap-1 overflow-x-auto border-b pb-1 print:hidden">
-        {(["grades", "counseling", "feedback"] as Tab[]).map((tab) => (
+        {(["grades", ...(canViewCounseling ? (["counseling"] as Tab[]) : []), "feedback"] as Tab[]).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}

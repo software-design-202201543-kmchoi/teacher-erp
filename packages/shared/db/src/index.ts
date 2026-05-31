@@ -10,3 +10,4 @@ export * from './schemas/teacher-subject.js';
 export * from './schemas/student-learning-snapshot.js';
 export * from './schemas/subject-progress-summary.js';
 export * from './schemas/audit-log.js';
+export * from './schemas/security-event.js';

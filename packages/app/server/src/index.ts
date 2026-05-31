@@ -10,6 +10,8 @@ import notificationsRouter from "./routes/notifications.js"
 import analyticsRouter from "./routes/analytics.js"
 import auditRouter from "./routes/audit.js"
 import searchRouter from "./routes/search.js"
+import securityRouter from "./routes/security.js"
+import { accessLog } from "./middleware/accessLog.js"
 import { connectDB } from "./db.js"
 import { seedDatabase } from "./data/seed.js"
 import { startOlapPipeline } from "./workers/olap-pipeline.js"
@@ -20,6 +22,7 @@ const clientOrigin = process.env.CLIENT_ORIGIN ?? "http://localhost:5173"
 
 app.use(express.json({ limit: "1mb" }))
 app.use(cookieParser())
+app.use(accessLog)
 
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", clientOrigin)
@@ -49,6 +52,7 @@ app.use("/api/notifications", notificationsRouter)
 app.use("/api/analytics", analyticsRouter)
 app.use("/api/audit", auditRouter)
 app.use("/api/search", searchRouter)
+app.use("/api/security", securityRouter)
 
 connectDB()
   .then(async () => {
