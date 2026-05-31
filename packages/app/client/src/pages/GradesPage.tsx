@@ -10,7 +10,7 @@ import {
 } from "recharts"
 import { calcAverage } from "@teacher-erp/shared-utils"
 import { useAuth } from "@/hooks/useAuth"
-import { getGrades, createGrade, deleteGrade } from "@/lib/api"
+import { getGrades, createGrade, updateGrade, deleteGrade } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import {
   DialogRoot,
@@ -82,12 +82,35 @@ export function GradesPage() {
     },
   })
 
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editScore, setEditScore] = useState("")
+
+  const updateMutation = useMutation({
+    mutationFn: ({ gradeId, score }: { gradeId: string; score: number }) =>
+      updateGrade(gradeId, { score }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["grades", studentId] })
+      setEditingId(null)
+    },
+  })
+
   const deleteMutation = useMutation({
     mutationFn: (gradeId: string) => deleteGrade(gradeId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["grades", studentId] })
     },
   })
+
+  function startEdit(gradeId: string, currentScore: number) {
+    setEditingId(gradeId)
+    setEditScore(String(currentScore))
+  }
+
+  function handleUpdate(gradeId: string) {
+    const score = Number(editScore)
+    if (isNaN(score) || score < 0 || score > 100) return
+    updateMutation.mutate({ gradeId, score })
+  }
 
   function handleCreate() {
     const score = Number(newScore)
@@ -233,7 +256,25 @@ export function GradesPage() {
                     <td className="px-4 py-3 text-muted-foreground">
                       {grade.term}
                     </td>
-                    <td className="px-4 py-3 font-medium">{grade.score}</td>
+                    <td className="px-4 py-3 font-medium">
+                      {editingId === grade._id ? (
+                        <input
+                          type="number"
+                          min={0}
+                          max={100}
+                          className="h-7 w-20 rounded border border-border bg-background px-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                          value={editScore}
+                          onChange={(e) => setEditScore(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleUpdate(grade._id)
+                            if (e.key === "Escape") setEditingId(null)
+                          }}
+                          autoFocus
+                        />
+                      ) : (
+                        grade.score
+                      )}
+                    </td>
                     <td className="px-4 py-3">
                       <span className="rounded bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
                         {grade.calculated_grade ?? "-"}등급
@@ -241,14 +282,44 @@ export function GradesPage() {
                     </td>
                     {isTeacher && (
                       <td className="px-4 py-3">
-                        <Button
-                          variant="destructive"
-                          size="xs"
-                          onClick={() => deleteMutation.mutate(grade._id)}
-                          disabled={deleteMutation.isPending}
-                        >
-                          삭제
-                        </Button>
+                        {grade.teacher_id !== user?._id ? (
+                          <span className="text-xs text-muted-foreground">읽기 전용</span>
+                        ) : editingId === grade._id ? (
+                          <div className="flex gap-1">
+                            <Button
+                              size="xs"
+                              onClick={() => handleUpdate(grade._id)}
+                              disabled={updateMutation.isPending}
+                            >
+                              저장
+                            </Button>
+                            <Button
+                              size="xs"
+                              variant="outline"
+                              onClick={() => setEditingId(null)}
+                            >
+                              취소
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex gap-1">
+                            <Button
+                              size="xs"
+                              variant="outline"
+                              onClick={() => startEdit(grade._id, grade.score)}
+                            >
+                              수정
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="xs"
+                              onClick={() => deleteMutation.mutate(grade._id)}
+                              disabled={deleteMutation.isPending}
+                            >
+                              삭제
+                            </Button>
+                          </div>
+                        )}
                       </td>
                     )}
                   </tr>

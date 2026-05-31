@@ -2,7 +2,7 @@ import { useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useAuth } from "@/hooks/useAuth"
-import { getCounseling, createCounseling } from "@/lib/api"
+import { getCounseling, createCounseling, deleteCounseling } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import {
   DialogRoot,
@@ -31,6 +31,7 @@ export function CounselingPage() {
   const [formShared, setFormShared] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [counselingModalOpen, setCounselingModalOpen] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<ICounselingRecord | null>(null)
 
   const { data: records = [], isLoading, error } = useQuery({
     queryKey: ["counseling", studentId, activeFilter],
@@ -51,6 +52,13 @@ export function CounselingPage() {
       setCounselingModalOpen(false)
     },
     onError: () => setFormError("상담 기록 저장 중 오류가 발생했습니다."),
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteCounseling,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["counseling", studentId] })
+    },
   })
 
   function handleFilterSubmit(e: React.FormEvent) {
@@ -175,9 +183,22 @@ export function CounselingPage() {
               <span className="text-sm font-medium">
                 {new Date(r.counsel_date).toLocaleDateString("ko-KR")}
               </span>
-              <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${r.is_shared ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>
-                {r.is_shared ? "공유됨" : "비공개"}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${r.is_shared ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>
+                  {r.is_shared ? "공유됨" : "비공개"}
+                </span>
+                {r.teacher_id === user?._id && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="destructive"
+                    disabled={deleteMutation.isPending}
+                    onClick={() => setDeleteTarget(r)}
+                  >
+                    삭제
+                  </Button>
+                )}
+              </div>
             </div>
             <p className="mt-2 text-sm">{r.content}</p>
             {r.next_plan && (
@@ -186,6 +207,36 @@ export function CounselingPage() {
           </div>
         ))}
       </div>
+
+      <DialogRoot open={Boolean(deleteTarget)} onOpenChange={(open) => {
+        if (!open) setDeleteTarget(null)
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>상담 기록 삭제</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">이 상담 기록을 삭제하시겠습니까?</p>
+          <div className="flex justify-end gap-2 pt-4">
+            <DialogClose asChild>
+              <Button type="button" variant="outline" size="sm">취소</Button>
+            </DialogClose>
+            <Button
+              type="button"
+              size="sm"
+              variant="destructive"
+              disabled={deleteMutation.isPending || !deleteTarget}
+              onClick={() => {
+                if (!deleteTarget) return
+                deleteMutation.mutate(deleteTarget._id, {
+                  onSuccess: () => setDeleteTarget(null),
+                })
+              }}
+            >
+              {deleteMutation.isPending ? "삭제 중..." : "삭제"}
+            </Button>
+          </div>
+        </DialogContent>
+      </DialogRoot>
     </main>
   )
 }

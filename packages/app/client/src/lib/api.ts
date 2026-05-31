@@ -181,6 +181,10 @@ export async function updateCounseling(
   })
 }
 
+export async function deleteCounseling(recordId: string): Promise<void> {
+  return request<void>(`/api/counseling/${recordId}`, { method: "DELETE" })
+}
+
 // --- Students (batch) ---
 export async function batchCreateStudents(
   students: import("@teacher-erp/shared-types").BatchStudentInput[]

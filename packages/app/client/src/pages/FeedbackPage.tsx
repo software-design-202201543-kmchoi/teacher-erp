@@ -2,7 +2,7 @@ import { useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useAuth } from "@/hooks/useAuth"
-import { getFeedback, createFeedback, deleteFeedback } from "@/lib/api"
+import { getFeedback, createFeedback, updateFeedback, deleteFeedback } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import {
   DialogRoot,
@@ -68,10 +68,31 @@ export function FeedbackPage() {
     onError: () => setFormError("피드백 작성 중 오류가 발생했습니다."),
   })
 
+  const [editingFb, setEditingFb] = useState<IFeedback | null>(null)
+  const [editType, setEditType] = useState("성적")
+  const [editContent, setEditContent] = useState("")
+  const [editVisibility, setEditVisibility] = useState("PRIVATE")
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: { type: string; content: string; visibility: string } }) =>
+      updateFeedback(id, data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["feedback", studentId] })
+      setEditingFb(null)
+    },
+  })
+
   const deleteMutation = useMutation({
     mutationFn: deleteFeedback,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["feedback", studentId] }),
   })
+
+  function startEditFeedback(fb: IFeedback) {
+    setEditingFb(fb)
+    setEditType(fb.type)
+    setEditContent(fb.content)
+    setEditVisibility(fb.visibility)
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -162,30 +183,81 @@ export function FeedbackPage() {
         )}
         {feedbacks.map((fb: IFeedback) => (
           <div key={fb._id} className="rounded-xl border bg-card p-4 shadow-sm">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-700">
-                  {fb.type}
-                </span>
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${VISIBILITY_BADGE[fb.visibility] ?? ""}`}>
-                  {VISIBILITY_LABEL[fb.visibility] ?? fb.visibility}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {new Date(fb.createdAt).toLocaleDateString("ko-KR")}
-                </span>
+            {editingFb?._id === fb._id ? (
+              /* 인라인 편집 폼 */
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="block space-y-1">
+                    <span className="text-xs font-medium text-muted-foreground">유형</span>
+                    <select
+                      className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
+                      value={editType}
+                      onChange={(e) => setEditType(e.target.value)}
+                    >
+                      {FEEDBACK_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </label>
+                  <label className="block space-y-1">
+                    <span className="text-xs font-medium text-muted-foreground">공개 범위</span>
+                    <select
+                      className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
+                      value={editVisibility}
+                      onChange={(e) => setEditVisibility(e.target.value)}
+                    >
+                      {VISIBILITY_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                <textarea
+                  rows={3}
+                  className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                />
+                <div className="flex justify-end gap-2">
+                  <Button size="sm" variant="outline" onClick={() => setEditingFb(null)}>취소</Button>
+                  <Button
+                    size="sm"
+                    disabled={updateMutation.isPending || !editContent.trim()}
+                    onClick={() => updateMutation.mutate({ id: fb._id, data: { type: editType, content: editContent, visibility: editVisibility } })}
+                  >
+                    {updateMutation.isPending ? "저장 중..." : "저장"}
+                  </Button>
+                </div>
               </div>
-              {user?.role === "TEACHER" && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => deleteMutation.mutate(fb._id)}
-                >
-                  삭제
-                </Button>
-              )}
-            </div>
-            <p className="mt-2 text-sm">{fb.content}</p>
+            ) : (
+              <>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-700">
+                      {fb.type}
+                    </span>
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${VISIBILITY_BADGE[fb.visibility] ?? ""}`}>
+                      {VISIBILITY_LABEL[fb.visibility] ?? fb.visibility}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(fb.createdAt).toLocaleDateString("ko-KR")}
+                    </span>
+                  </div>
+                  {user?.role === "TEACHER" && fb.teacher_id === user._id && (
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="sm" onClick={() => startEditFeedback(fb)}>수정</Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => deleteMutation.mutate(fb._id)}
+                      >
+                        삭제
+                      </Button>
+                    </div>
+                  )}
+                </div>
+                <p className="mt-2 text-sm">{fb.content}</p>
+              </>
+            )}
           </div>
         ))}
       </div>

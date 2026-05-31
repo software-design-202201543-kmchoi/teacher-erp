@@ -1,7 +1,9 @@
 import { Router } from "express"
 import type { ICounselingRecord } from "@teacher-erp/shared-types"
+import { demoUsersById } from "@teacher-erp/shared-utils"
 import { authenticate } from "../middleware/authenticate.js"
 import { writeAuditLog } from "../utils/auditLog.js"
+import { createNotification } from "../utils/createNotification.js"
 import { CounselingDoc } from "../models/counseling.js"
 
 const router = Router()
@@ -74,6 +76,15 @@ router.post("/by-student/:studentId", authenticate, async (req, res) => {
     after: newRecord.toObject() as unknown,
   })
 
+  createNotification(studentId, "새 상담 기록", "상담 기록이 등록되었습니다.")
+  if (is_shared) {
+    for (const u of Object.values(demoUsersById)) {
+      if (u.role === "TEACHER" && u._id !== user._id) {
+        createNotification(u._id, "공유 상담 기록", "새 공유 상담 기록이 등록되었습니다.")
+      }
+    }
+  }
+
   res.status(201).json(newRecord)
 })
 
@@ -116,7 +127,51 @@ router.put("/:recordId", authenticate, async (req, res) => {
     after: updated.toObject() as unknown,
   })
 
+  createNotification(record.student_id, "상담 기록 수정", "상담 기록이 수정되었습니다.")
+  if (updated.is_shared) {
+    for (const u of Object.values(demoUsersById)) {
+      if (u.role === "TEACHER" && u._id !== user._id) {
+        createNotification(u._id, "공유 상담 기록 수정", "공유 상담 기록이 수정되었습니다.")
+      }
+    }
+  }
+
   res.json(updated.toObject())
+})
+
+// DELETE /api/counseling/:recordId — author TEACHER only
+router.delete("/:recordId", authenticate, async (req, res) => {
+  const user = req.authUser!
+  if (user.role !== "TEACHER") {
+    res.status(403).json({ message: "Forbidden" })
+    return
+  }
+
+  const record = await CounselingDoc.findById(req.params["recordId"])
+
+  if (!record) {
+    res.status(404).json({ message: "Record not found" })
+    return
+  }
+
+  if (record.teacher_id !== user._id) {
+    res.status(403).json({ message: "Forbidden: you are not the author of this record" })
+    return
+  }
+
+  const snapshot = record.toObject() as unknown
+  await record.deleteOne()
+
+  void writeAuditLog({
+    collection: "counselingrecords",
+    doc_id: record._id as string,
+    student_id: record.student_id,
+    operation: "delete",
+    actor_id: user._id,
+    before: snapshot,
+  })
+
+  res.status(204).end()
 })
 
 export default router
