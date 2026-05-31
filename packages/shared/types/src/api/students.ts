@@ -1,4 +1,4 @@
-import type { IAcademicRecord, IStudentUser } from "../index.js";
+import type { IAcademicRecord, IStudentUser, IParentUser } from "../index.js";
 
 export interface StudentIdParams {
   id: string;
@@ -32,11 +32,31 @@ export interface BatchStudentInput {
   student_num: number;
   email?: string;
   password?: string;
+  parent_name?: string;
+  parent_email?: string;
+}
+
+export interface BatchCreatedParent {
+  user: IParentUser;
+  tempPassword: string;
+  isNew: boolean;
 }
 
 export interface BatchCreatedResult {
   student: IStudentUser;
   tempPassword: string;
+  parent?: BatchCreatedParent;
+}
+
+export interface ParentLinkInput {
+  email: string;
+  name?: string;
+}
+
+export interface ParentLinkResult {
+  parent: IParentUser;
+  tempPassword: string;
+  isNew: boolean;
 }
 
 export interface BatchFailedResult {

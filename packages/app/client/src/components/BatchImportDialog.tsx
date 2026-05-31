@@ -12,13 +12,16 @@ import type { BatchStudentInput, BatchCreateResponse } from "@teacher-erp/shared
 import { batchCreateStudents } from "@/lib/api"
 
 // 이메일·비밀번호는 서버에서 자동 생성 — CSV에서 받지 않음
-const TEMPLATE_CSV = "이름,학년,반,번호\n홍길동,1,2,15\n김철수,2,1,7"
+const TEMPLATE_CSV =
+  "이름,학년,반,번호,학부모이름,학부모이메일\n홍길동,1,2,15,홍아버지,hong@parent.com\n김철수,2,1,7,,"
 
 const COLUMN_ALIASES: Record<string, string> = {
   이름: "name", name: "name",
   학년: "grade_level", grade_level: "grade_level",
   반: "class_num", class_num: "class_num",
   번호: "student_num", student_num: "student_num",
+  학부모이름: "parent_name", parent_name: "parent_name",
+  학부모이메일: "parent_email", parent_email: "parent_email",
 }
 
 interface PreviewRow {
@@ -27,6 +30,8 @@ interface PreviewRow {
   grade_level_raw: string
   class_num_raw: string
   student_num_raw: string
+  parent_name_raw: string
+  parent_email_raw: string
   errors: string[]
 }
 
@@ -59,6 +64,9 @@ function csvToPreviewRows(text: string): { rows: PreviewRow[]; error: string | n
     return { rows: [], error: "필수 컬럼(이름, 학년, 반, 번호)이 없습니다" }
   }
 
+  const pNameIdx = header.indexOf("parent_name")
+  const pEmailIdx = header.indexOf("parent_email")
+
   const rows: PreviewRow[] = lines
     .slice(1)
     .map((cols, i) => {
@@ -66,6 +74,8 @@ function csvToPreviewRows(text: string): { rows: PreviewRow[]; error: string | n
       const grade_level_raw = cols[gradeIdx] ?? ""
       const class_num_raw = cols[classIdx] ?? ""
       const student_num_raw = cols[numIdx] ?? ""
+      const parent_name_raw = pNameIdx >= 0 ? (cols[pNameIdx] ?? "") : ""
+      const parent_email_raw = pEmailIdx >= 0 ? (cols[pEmailIdx] ?? "") : ""
 
       const errors = validateBatchRow({
         name,
@@ -74,7 +84,12 @@ function csvToPreviewRows(text: string): { rows: PreviewRow[]; error: string | n
         student_num: Number(student_num_raw),
       } as BatchStudentInput)
 
-      return { rowIndex: i + 2, name, grade_level_raw, class_num_raw, student_num_raw, errors }
+      return {
+        rowIndex: i + 2,
+        name, grade_level_raw, class_num_raw, student_num_raw,
+        parent_name_raw, parent_email_raw,
+        errors,
+      }
     })
     .filter((r) => r.name || r.grade_level_raw || r.class_num_raw || r.student_num_raw)
 
@@ -146,7 +161,8 @@ export function BatchImportDialog({ open, onOpenChange, onResult }: BatchImportD
         grade_level: Number(r.grade_level_raw),
         class_num: Number(r.class_num_raw),
         student_num: Number(r.student_num_raw),
-        // 이메일·비밀번호 미전송 → 서버가 자동 생성
+        parent_name: r.parent_name_raw || undefined,
+        parent_email: r.parent_email_raw || undefined,
       }))
     mutation.mutate(students)
   }
@@ -233,6 +249,7 @@ export function BatchImportDialog({ open, onOpenChange, onResult }: BatchImportD
                     <th className="px-3 py-2 text-left font-medium text-muted-foreground">학년</th>
                     <th className="px-3 py-2 text-left font-medium text-muted-foreground">반</th>
                     <th className="px-3 py-2 text-left font-medium text-muted-foreground">번호</th>
+                    <th className="px-3 py-2 text-left font-medium text-muted-foreground">학부모</th>
                     <th className="px-3 py-2 text-left font-medium text-muted-foreground">상태</th>
                   </tr>
                 </thead>
@@ -246,6 +263,11 @@ export function BatchImportDialog({ open, onOpenChange, onResult }: BatchImportD
                       <td className="px-3 py-2">{row.grade_level_raw || "-"}</td>
                       <td className="px-3 py-2">{row.class_num_raw || "-"}</td>
                       <td className="px-3 py-2">{row.student_num_raw || "-"}</td>
+                      <td className="px-3 py-2 text-xs text-muted-foreground">
+                        {row.parent_name_raw || row.parent_email_raw
+                          ? (row.parent_name_raw || "") + (row.parent_email_raw ? ` <${row.parent_email_raw}>` : "")
+                          : <span className="italic">없음</span>}
+                      </td>
                       <td className="px-3 py-2">
                         {row.errors.length > 0 ? (
                           <span

@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/hooks/useAuth"
-import { getStudent, getAcademicRecord, updateAcademicRecord } from "@/lib/api"
+import { getStudent, getAcademicRecord, updateAcademicRecord, getStudentParents, linkParent, unlinkParent } from "@/lib/api"
 
 export function StudentDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -49,6 +49,39 @@ export function StudentDetailPage() {
   })
 
   const canEdit = ability.can("update", "Student") || user?.role === "TEACHER"
+  const isTeacher = user?.role === "TEACHER"
+
+  // 학부모 관리 상태
+  const [parentEmail, setParentEmail] = useState("")
+  const [parentName, setParentName] = useState("")
+  const [parentLinkMsg, setParentLinkMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null)
+
+  const { data: parentsData, isLoading: parentsLoading } = useQuery({
+    queryKey: ["student-parents", id],
+    queryFn: () => getStudentParents(id!),
+    enabled: Boolean(id) && isTeacher,
+  })
+
+  const linkMutation = useMutation({
+    mutationFn: () => linkParent(id!, { email: parentEmail.trim(), name: parentName.trim() || undefined }),
+    onSuccess: (result) => {
+      void queryClient.invalidateQueries({ queryKey: ["student-parents", id] })
+      setParentEmail("")
+      setParentName("")
+      setParentLinkMsg({
+        type: "ok",
+        text: result.isNew
+          ? `학부모 계정 생성 완료 (임시 비밀번호: ${result.tempPassword})`
+          : "기존 학부모 계정에 연결했습니다.",
+      })
+    },
+    onError: () => setParentLinkMsg({ type: "err", text: "연결에 실패했습니다." }),
+  })
+
+  const unlinkMutation = useMutation({
+    mutationFn: (parentId: string) => unlinkParent(id!, parentId),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["student-parents", id] }),
+  })
 
   function handleEditStart() {
     setAbsences(academicRecord?.attendance_info?.absences ?? 0)
@@ -221,6 +254,76 @@ export function StudentDetailPage() {
           </div>
         )}
       </section>
+
+      {/* 학부모 관리 — TEACHER 전용 */}
+      {isTeacher && (
+        <section className="rounded-xl border bg-card p-6 shadow-sm">
+          <h2 className="mb-4 text-lg font-medium">학부모 연결</h2>
+
+          {/* 연결된 학부모 목록 */}
+          {parentsLoading ? (
+            <p className="text-sm text-muted-foreground">불러오는 중...</p>
+          ) : (parentsData?.parents.length ?? 0) > 0 ? (
+            <ul className="mb-4 flex flex-col gap-2">
+              {parentsData!.parents.map((p) => (
+                <li key={p._id} className="flex items-center justify-between rounded-lg border bg-muted/30 px-4 py-2.5 text-sm">
+                  <div>
+                    <span className="font-medium">{p.name}</span>
+                    <span className="ml-2 text-xs text-muted-foreground">{p.email}</span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => unlinkMutation.mutate(p._id)}
+                    disabled={unlinkMutation.isPending}
+                  >
+                    연결 해제
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mb-4 text-sm text-muted-foreground">연결된 학부모가 없습니다.</p>
+          )}
+
+          {/* 학부모 연결 폼 */}
+          <div className="flex flex-col gap-3 rounded-lg border bg-muted/20 p-4">
+            <p className="text-xs font-medium text-muted-foreground">학부모 연결 / 신규 생성</p>
+            <div className="flex flex-wrap gap-2">
+              <input
+                type="text"
+                placeholder="학부모 이름 (선택)"
+                value={parentName}
+                onChange={(e) => setParentName(e.target.value)}
+                className="h-8 flex-1 min-w-36 rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+              <input
+                type="email"
+                placeholder="이메일 (필수)"
+                value={parentEmail}
+                onChange={(e) => { setParentEmail(e.target.value); setParentLinkMsg(null) }}
+                className="h-8 flex-1 min-w-52 rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+              <Button
+                size="sm"
+                onClick={() => { setParentLinkMsg(null); linkMutation.mutate() }}
+                disabled={!parentEmail.trim() || linkMutation.isPending}
+              >
+                {linkMutation.isPending ? "처리 중..." : "연결"}
+              </Button>
+            </div>
+            {parentLinkMsg && (
+              <p className={`text-xs ${parentLinkMsg.type === "ok" ? "text-green-600 dark:text-green-400 font-mono" : "text-destructive"}`}>
+                {parentLinkMsg.text}
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              이미 계정이 있는 이메일이면 기존 계정에 연결됩니다. 없으면 새 학부모 계정이 자동 생성됩니다.
+            </p>
+          </div>
+        </section>
+      )}
     </main>
   )
 }

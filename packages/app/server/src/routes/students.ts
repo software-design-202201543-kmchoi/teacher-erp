@@ -1,6 +1,12 @@
 import { Router } from "express"
-import type { IStudentUser } from "@teacher-erp/shared-types"
-import type { BatchStudentInput, BatchCreatedResult, BatchFailedResult } from "@teacher-erp/shared-types"
+import type { IStudentUser, IParentUser } from "@teacher-erp/shared-types"
+import type {
+  BatchStudentInput,
+  BatchCreatedResult,
+  BatchFailedResult,
+  ParentLinkInput,
+  ParentLinkResult,
+} from "@teacher-erp/shared-types"
 import {
   demoUsers,
   demoUsersById,
@@ -12,6 +18,11 @@ import {
 import { authenticate } from "../middleware/authenticate.js"
 import { demoAuthAccounts } from "../data/authAccounts.js"
 import { createNotification } from "../utils/createNotification.js"
+
+function autoGenerateParentEmail(grade: number, cls: number, num: number): string {
+  const year = new Date().getFullYear() - grade + 1
+  return `parent.${year}${grade}${String(cls).padStart(2, "0")}${String(num).padStart(2, "0")}@school.local`
+}
 
 const router = Router()
 
@@ -143,6 +154,71 @@ router.put("/:id/academic-record", (req, res) => {
   res.json({ academicRecord: record })
 })
 
+// GET /:id/parents — 학생에 연결된 학부모 목록 (TEACHER only)
+router.get("/:id/parents", (req, res) => {
+  if (req.authUser?.role !== "TEACHER") { res.status(403).json({ message: "Forbidden" }); return }
+  const student = demoUsersById[req.params.id]
+  if (!student || student.role !== "STUDENT") { res.status(404).json({ message: "Student not found" }); return }
+  const parents = demoUsers.filter(
+    (u): u is IParentUser => u.role === "PARENT" && u.children.includes(req.params.id)
+  )
+  res.json({ parents })
+})
+
+// POST /:id/parents — 학부모 연결 또는 신규 생성 (TEACHER only)
+router.post("/:id/parents", (req, res) => {
+  if (req.authUser?.role !== "TEACHER") { res.status(403).json({ message: "Forbidden" }); return }
+  const studentId = req.params.id
+  const student = demoUsersById[studentId]
+  if (!student || student.role !== "STUDENT") { res.status(404).json({ message: "Student not found" }); return }
+
+  const { email, name } = req.body as ParentLinkInput
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    res.status(400).json({ message: "유효한 이메일을 입력하세요" }); return
+  }
+
+  const emailLower = email.toLowerCase()
+  const existing = demoUsers.find(
+    (u): u is IParentUser => u.role === "PARENT" && u.email.toLowerCase() === emailLower
+  )
+
+  let result: ParentLinkResult
+  if (existing) {
+    if (!existing.children.includes(studentId)) existing.children.push(studentId)
+    result = { parent: existing, tempPassword: "", isNew: false }
+  } else {
+    const tempPassword = generateTempPassword()
+    const s = student as IStudentUser
+    const newParent: IParentUser = {
+      _id: `parent-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      email: emailLower,
+      name: name?.trim() || `${s.name} 학부모`,
+      role: "PARENT",
+      children: [studentId],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }
+    demoUsers.push(newParent)
+    demoUsersById[newParent._id] = newParent
+    demoAuthAccounts.push({ role: "PARENT", email: emailLower, password: tempPassword, userId: newParent._id })
+    result = { parent: newParent, tempPassword, isNew: true }
+  }
+
+  res.status(existing ? 200 : 201).json(result)
+})
+
+// DELETE /:id/parents/:parentId — 학부모 연결 해제 (TEACHER only)
+router.delete("/:id/parents/:parentId", (req, res) => {
+  if (req.authUser?.role !== "TEACHER") { res.status(403).json({ message: "Forbidden" }); return }
+  const { id: studentId, parentId } = req.params
+  const parent = demoUsers.find(
+    (u): u is IParentUser => u.role === "PARENT" && u._id === parentId
+  )
+  if (!parent) { res.status(404).json({ message: "Parent not found" }); return }
+  parent.children = parent.children.filter((c) => c !== studentId)
+  res.json({ ok: true })
+})
+
 const BATCH_MAX = 200
 
 // POST /batch — TEACHER only, partial-success (207)
@@ -235,14 +311,49 @@ router.post("/batch", (req, res) => {
       updatedAt: new Date(),
     }
 
-    // Persist — each item is independent (best-effort partial, no all-or-nothing)
+    // Persist student
     demoUsers.push(newStudent)
     demoUsersById[newStudent._id] = newStudent
     demoAuthAccounts.push({ role: "STUDENT", email, password: tempPassword, userId: newStudent._id })
 
     seenKeys.add(key)
     seenEmails.add(emailLower)
-    created.push({ student: newStudent, tempPassword })
+
+    // 학부모 생성 또는 연결
+    let parentResult: BatchCreatedResult["parent"] | undefined
+    const pName = input.parent_name?.trim()
+    const pEmail = (input.parent_email?.trim() || (pName ? autoGenerateParentEmail(gradeLevel, classNum, studentNum) : "")).toLowerCase()
+
+    if (pEmail) {
+      const existing = demoUsers.find(
+        (u): u is IParentUser => u.role === "PARENT" && u.email.toLowerCase() === pEmail
+      )
+      if (existing) {
+        if (!existing.children.includes(newStudent._id)) {
+          existing.children.push(newStudent._id)
+        }
+        parentResult = { user: existing, tempPassword: "", isNew: false }
+      } else {
+        const parentPw = generateTempPassword()
+        const newParent: IParentUser = {
+          _id: `parent-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          email: pEmail,
+          name: pName || `${newStudent.name} 학부모`,
+          role: "PARENT",
+          children: [newStudent._id],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }
+        demoUsers.push(newParent)
+        demoUsersById[newParent._id] = newParent
+        demoAuthAccounts.push({ role: "PARENT", email: pEmail, password: parentPw, userId: newParent._id })
+        parentResult = { user: newParent, tempPassword: parentPw, isNew: true }
+      }
+    }
+
+    const createdEntry: BatchCreatedResult = { student: newStudent, tempPassword }
+    if (parentResult) createdEntry.parent = parentResult
+    created.push(createdEntry)
   }
 
   // Best-effort summary notification — failure here must never block the response

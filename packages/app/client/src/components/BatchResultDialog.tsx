@@ -10,7 +10,10 @@ import { Button } from "@/components/ui/button"
 import type { BatchCreateResponse } from "@teacher-erp/shared-types"
 
 function exportSuccessXlsx(result: BatchCreateResponse) {
-  const rows = result.created.map(({ student, tempPassword }) => ({
+  const wb = XLSX.utils.book_new()
+
+  // 학생 계정 시트
+  const studentRows = result.created.map(({ student, tempPassword }) => ({
     이름: student.name,
     학년: student.grade_level,
     반: student.class_num,
@@ -18,21 +21,29 @@ function exportSuccessXlsx(result: BatchCreateResponse) {
     이메일: student.email,
     임시비밀번호: tempPassword,
   }))
+  const wsStudents = XLSX.utils.json_to_sheet(studentRows)
+  wsStudents["!cols"] = [{ wch: 10 }, { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 30 }, { wch: 14 }]
+  XLSX.utils.book_append_sheet(wb, wsStudents, "학생 계정")
 
-  const wb = XLSX.utils.book_new()
-  const ws = XLSX.utils.json_to_sheet(rows)
+  // 학부모 계정 시트 (신규 생성된 것만)
+  const parentRows = result.created
+    .filter((r) => r.parent?.isNew)
+    .map(({ student, parent }) => ({
+      학부모이름: parent!.user.name,
+      이메일: parent!.user.email,
+      임시비밀번호: parent!.tempPassword,
+      연결학생: student.name,
+      학년: student.grade_level,
+      반: student.class_num,
+      번호: student.student_num,
+    }))
 
-  // 컬럼 너비 설정
-  ws["!cols"] = [
-    { wch: 10 }, // 이름
-    { wch: 6 },  // 학년
-    { wch: 6 },  // 반
-    { wch: 6 },  // 번호
-    { wch: 28 }, // 이메일
-    { wch: 14 }, // 임시비밀번호
-  ]
+  if (parentRows.length > 0) {
+    const wsParents = XLSX.utils.json_to_sheet(parentRows)
+    wsParents["!cols"] = [{ wch: 12 }, { wch: 30 }, { wch: 14 }, { wch: 10 }, { wch: 6 }, { wch: 6 }, { wch: 6 }]
+    XLSX.utils.book_append_sheet(wb, wsParents, "학부모 계정")
+  }
 
-  XLSX.utils.book_append_sheet(wb, ws, "등록 결과")
   XLSX.writeFile(wb, `학생_등록_결과_${new Date().toISOString().slice(0, 10)}.xlsx`)
 }
 

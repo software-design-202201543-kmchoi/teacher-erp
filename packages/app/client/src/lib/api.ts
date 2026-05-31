@@ -204,6 +204,27 @@ export async function markAllNotificationsRead(): Promise<{ ok: boolean }> {
   return request<{ ok: boolean }>("/api/notifications/read-all", { method: "POST" })
 }
 
+// --- Parents ---
+export async function getStudentParents(
+  studentId: string
+): Promise<{ parents: import("@teacher-erp/shared-types").IParentUser[] }> {
+  return request(`/api/students/${studentId}/parents`)
+}
+
+export async function linkParent(
+  studentId: string,
+  data: import("@teacher-erp/shared-types").ParentLinkInput
+): Promise<import("@teacher-erp/shared-types").ParentLinkResult> {
+  return request(`/api/students/${studentId}/parents`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  })
+}
+
+export async function unlinkParent(studentId: string, parentId: string): Promise<void> {
+  return request(`/api/students/${studentId}/parents/${parentId}`, { method: "DELETE" })
+}
+
 // --- Reports ---
 export async function getGradeReport(
   studentId: string
