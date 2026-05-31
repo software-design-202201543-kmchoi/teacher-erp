@@ -13,6 +13,7 @@ import {
   ClipboardList,
   Bell,
   LogOut,
+  Search,
   type LucideIcon,
 } from "lucide-react"
 
@@ -23,6 +24,7 @@ type NavItem = { label: string; to: string; Icon: LucideIcon }
 const teacherNav: NavItem[] = [
   { label: "대시보드", to: "/", Icon: Home },
   { label: "학생 목록", to: "/students", Icon: Users },
+  { label: "통합 검색", to: "/search", Icon: Search },
 ]
 
 interface AppShellProps {

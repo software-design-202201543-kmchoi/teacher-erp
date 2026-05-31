@@ -14,6 +14,7 @@ import { NotificationsPage } from "@/pages/NotificationsPage"
 import { AnalyticsPage } from "@/pages/AnalyticsPage"
 import { ReportsPage } from "@/pages/ReportsPage"
 import { AuditPage } from "@/pages/AuditPage"
+import { SearchPage } from "@/pages/SearchPage"
 
 export function App() {
   const { isAuthenticated, isLoading } = useAuth()
@@ -87,6 +88,7 @@ export function App() {
         path="/notifications"
         element={<AppShell><NotificationsPage /></AppShell>}
       />
+      <Route path="/search" element={<AppShell><SearchPage /></AppShell>} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

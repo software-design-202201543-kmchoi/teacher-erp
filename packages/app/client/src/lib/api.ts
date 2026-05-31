@@ -291,6 +291,30 @@ export async function getAnalyticsSubjectProgress(
   )
 }
 
+// --- Integrated Search ---
+export async function searchIntegrated(params: {
+  q?: string
+  subject?: string
+  from?: string
+  to?: string
+  types?: string[]
+  page?: number
+  page_size?: number
+}): Promise<import("@teacher-erp/shared-types").IntegratedSearchResponse> {
+  const query = new URLSearchParams()
+  if (params.q) query.set("q", params.q)
+  if (params.subject) query.set("subject", params.subject)
+  if (params.from) query.set("from", params.from)
+  if (params.to) query.set("to", params.to)
+  if (params.types && params.types.length > 0) query.set("types", params.types.join(","))
+  if (params.page) query.set("page", String(params.page))
+  if (params.page_size) query.set("page_size", String(params.page_size))
+
+  return request<import("@teacher-erp/shared-types").IntegratedSearchResponse>(
+    `/api/search?${query.toString()}`
+  )
+}
+
 // --- Audit Log ---
 export async function getAuditLog(
   studentId: string,

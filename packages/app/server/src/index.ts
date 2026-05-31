@@ -9,6 +9,7 @@ import reportsRouter from "./routes/reports.js"
 import notificationsRouter from "./routes/notifications.js"
 import analyticsRouter from "./routes/analytics.js"
 import auditRouter from "./routes/audit.js"
+import searchRouter from "./routes/search.js"
 import { connectDB } from "./db.js"
 import { seedDatabase } from "./data/seed.js"
 import { startOlapPipeline } from "./workers/olap-pipeline.js"
@@ -47,6 +48,7 @@ app.use("/api/reports", reportsRouter)
 app.use("/api/notifications", notificationsRouter)
 app.use("/api/analytics", analyticsRouter)
 app.use("/api/audit", auditRouter)
+app.use("/api/search", searchRouter)
 
 connectDB()
   .then(async () => {
