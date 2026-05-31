@@ -7,27 +7,18 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { validateBatchRow, autoGenerateEmail } from "@teacher-erp/shared-utils"
+import { validateBatchRow } from "@teacher-erp/shared-utils"
 import type { BatchStudentInput, BatchCreateResponse } from "@teacher-erp/shared-types"
 import { batchCreateStudents } from "@/lib/api"
 
-const TEMPLATE_CSV =
-  "이름,학년,반,번호,이메일,임시비밀번호\n홍길동,1,2,15,,\n김철수,2,1,7,ks@school.local,"
+// 이메일·비밀번호는 서버에서 자동 생성 — CSV에서 받지 않음
+const TEMPLATE_CSV = "이름,학년,반,번호\n홍길동,1,2,15\n김철수,2,1,7"
 
 const COLUMN_ALIASES: Record<string, string> = {
-  이름: "name",
-  name: "name",
-  학년: "grade_level",
-  grade_level: "grade_level",
-  반: "class_num",
-  class_num: "class_num",
-  번호: "student_num",
-  student_num: "student_num",
-  이메일: "email",
-  email: "email",
-  임시비밀번호: "password",
-  "임시 비밀번호": "password",
-  password: "password",
+  이름: "name", name: "name",
+  학년: "grade_level", grade_level: "grade_level",
+  반: "class_num", class_num: "class_num",
+  번호: "student_num", student_num: "student_num",
 }
 
 interface PreviewRow {
@@ -36,10 +27,7 @@ interface PreviewRow {
   grade_level_raw: string
   class_num_raw: string
   student_num_raw: string
-  email_raw: string
-  password_raw: string
   errors: string[]
-  emailDisplay: string
 }
 
 function parseCSV(text: string): string[][] {
@@ -71,9 +59,6 @@ function csvToPreviewRows(text: string): { rows: PreviewRow[]; error: string | n
     return { rows: [], error: "필수 컬럼(이름, 학년, 반, 번호)이 없습니다" }
   }
 
-  const emailIdx = header.indexOf("email")
-  const passwordIdx = header.indexOf("password")
-
   const rows: PreviewRow[] = lines
     .slice(1)
     .map((cols, i) => {
@@ -81,42 +66,17 @@ function csvToPreviewRows(text: string): { rows: PreviewRow[]; error: string | n
       const grade_level_raw = cols[gradeIdx] ?? ""
       const class_num_raw = cols[classIdx] ?? ""
       const student_num_raw = cols[numIdx] ?? ""
-      const email_raw = emailIdx >= 0 ? (cols[emailIdx] ?? "") : ""
-      const password_raw = passwordIdx >= 0 ? (cols[passwordIdx] ?? "") : ""
 
       const errors = validateBatchRow({
         name,
         grade_level: Number(grade_level_raw),
         class_num: Number(class_num_raw),
         student_num: Number(student_num_raw),
-        email: email_raw || undefined,
-        password: password_raw || undefined,
       } as BatchStudentInput)
 
-      const gl = Number(grade_level_raw)
-      const cn = Number(class_num_raw)
-      const sn = Number(student_num_raw)
-      const emailDisplay =
-        email_raw ||
-        (!isNaN(gl) && !isNaN(cn) && !isNaN(sn)
-          ? autoGenerateEmail(gl, cn, sn)
-          : "(자동생성)")
-
-      return {
-        rowIndex: i + 2,
-        name,
-        grade_level_raw,
-        class_num_raw,
-        student_num_raw,
-        email_raw,
-        password_raw,
-        errors,
-        emailDisplay,
-      }
+      return { rowIndex: i + 2, name, grade_level_raw, class_num_raw, student_num_raw, errors }
     })
-    .filter(
-      (r) => r.name || r.grade_level_raw || r.class_num_raw || r.student_num_raw
-    )
+    .filter((r) => r.name || r.grade_level_raw || r.class_num_raw || r.student_num_raw)
 
   return { rows, error: null }
 }
@@ -137,11 +97,7 @@ interface BatchImportDialogProps {
   onResult: (result: BatchCreateResponse) => void
 }
 
-export function BatchImportDialog({
-  open,
-  onOpenChange,
-  onResult,
-}: BatchImportDialogProps) {
+export function BatchImportDialog({ open, onOpenChange, onResult }: BatchImportDialogProps) {
   const [step, setStep] = useState<"upload" | "preview">("upload")
   const [rows, setRows] = useState<PreviewRow[]>([])
   const [fileName, setFileName] = useState("")
@@ -190,8 +146,7 @@ export function BatchImportDialog({
         grade_level: Number(r.grade_level_raw),
         class_num: Number(r.class_num_raw),
         student_num: Number(r.student_num_raw),
-        email: r.email_raw || undefined,
-        password: r.password_raw || undefined,
+        // 이메일·비밀번호 미전송 → 서버가 자동 생성
       }))
     mutation.mutate(students)
   }
@@ -208,7 +163,7 @@ export function BatchImportDialog({
         onOpenChange(o)
       }}
     >
-      <DialogContent className="max-w-3xl flex flex-col max-h-[90vh]">
+      <DialogContent className="max-w-2xl flex flex-col max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>학생 일괄 등록</DialogTitle>
         </DialogHeader>
@@ -216,7 +171,8 @@ export function BatchImportDialog({
         {step === "upload" ? (
           <div className="flex flex-col gap-4">
             <p className="text-sm text-muted-foreground">
-              CSV 파일로 여러 학생을 한 번에 등록합니다. 한 번에 최대 200명까지 가능합니다.
+              CSV 파일로 여러 학생을 한 번에 등록합니다. 이메일과 비밀번호는 자동으로 생성됩니다.
+              최대 200명까지 가능합니다.
             </p>
 
             <Button
@@ -230,9 +186,7 @@ export function BatchImportDialog({
 
             <div
               className={`flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-10 transition-colors cursor-pointer ${
-                isDragging
-                  ? "border-primary bg-primary/5"
-                  : "border-border hover:border-muted-foreground/50"
+                isDragging ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/50"
               }`}
               onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
               onDragLeave={() => setIsDragging(false)}
@@ -244,9 +198,8 @@ export function BatchImportDialog({
               }}
               onClick={() => fileInputRef.current?.click()}
             >
-              <span className="text-2xl">📄</span>
               <p className="text-sm font-medium">CSV 파일을 드래그하거나 클릭해 선택</p>
-              <p className="text-xs text-muted-foreground">.csv 파일 (UTF-8)</p>
+              <p className="text-xs text-muted-foreground">이름, 학년, 반, 번호 컬럼 필수 · .csv (UTF-8)</p>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -267,12 +220,8 @@ export function BatchImportDialog({
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground truncate max-w-xs">{fileName}</p>
               <div className="flex gap-3 text-sm shrink-0">
-                {validCount > 0 && (
-                  <span className="text-green-600 font-medium">{validCount}명 등록 가능</span>
-                )}
-                {errorCount > 0 && (
-                  <span className="text-destructive font-medium">{errorCount}명 오류</span>
-                )}
+                {validCount > 0 && <span className="text-green-600 font-medium">{validCount}명 등록 가능</span>}
+                {errorCount > 0 && <span className="text-destructive font-medium">{errorCount}명 오류</span>}
               </div>
             </div>
 
@@ -284,7 +233,6 @@ export function BatchImportDialog({
                     <th className="px-3 py-2 text-left font-medium text-muted-foreground">학년</th>
                     <th className="px-3 py-2 text-left font-medium text-muted-foreground">반</th>
                     <th className="px-3 py-2 text-left font-medium text-muted-foreground">번호</th>
-                    <th className="px-3 py-2 text-left font-medium text-muted-foreground">이메일</th>
                     <th className="px-3 py-2 text-left font-medium text-muted-foreground">상태</th>
                   </tr>
                 </thead>
@@ -298,7 +246,6 @@ export function BatchImportDialog({
                       <td className="px-3 py-2">{row.grade_level_raw || "-"}</td>
                       <td className="px-3 py-2">{row.class_num_raw || "-"}</td>
                       <td className="px-3 py-2">{row.student_num_raw || "-"}</td>
-                      <td className="px-3 py-2 text-muted-foreground text-xs">{row.emailDisplay}</td>
                       <td className="px-3 py-2">
                         {row.errors.length > 0 ? (
                           <span
@@ -322,27 +269,17 @@ export function BatchImportDialog({
                 오류 행은 제외하고 정상 행 {validCount}명만 등록됩니다.
               </p>
             )}
-
             {mutation.isError && (
               <p className="text-sm text-destructive">
-                {mutation.error instanceof Error
-                  ? mutation.error.message
-                  : "등록 중 오류가 발생했습니다"}
+                {mutation.error instanceof Error ? mutation.error.message : "등록 중 오류가 발생했습니다"}
               </p>
             )}
 
             <div className="flex justify-between pt-2">
-              <Button
-                variant="outline"
-                onClick={() => setStep("upload")}
-                disabled={mutation.isPending}
-              >
+              <Button variant="outline" onClick={() => setStep("upload")} disabled={mutation.isPending}>
                 이전으로
               </Button>
-              <Button
-                onClick={handleSubmit}
-                disabled={validCount === 0 || mutation.isPending}
-              >
+              <Button onClick={handleSubmit} disabled={validCount === 0 || mutation.isPending}>
                 {mutation.isPending ? "등록 중..." : `${validCount}명 등록하기`}
               </Button>
             </div>

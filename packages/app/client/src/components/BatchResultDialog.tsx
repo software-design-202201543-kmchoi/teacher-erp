@@ -1,4 +1,5 @@
 import { useState } from "react"
+import * as XLSX from "xlsx"
 import {
   DialogRoot,
   DialogContent,
@@ -8,14 +9,45 @@ import {
 import { Button } from "@/components/ui/button"
 import type { BatchCreateResponse } from "@teacher-erp/shared-types"
 
-function downloadCSV(content: string, filename: string) {
-  const blob = new Blob(["﻿" + content], { type: "text/csv;charset=utf-8" })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement("a")
-  a.href = url
-  a.download = filename
-  a.click()
-  URL.revokeObjectURL(url)
+function exportSuccessXlsx(result: BatchCreateResponse) {
+  const rows = result.created.map(({ student, tempPassword }) => ({
+    이름: student.name,
+    학년: student.grade_level,
+    반: student.class_num,
+    번호: student.student_num,
+    이메일: student.email,
+    임시비밀번호: tempPassword,
+  }))
+
+  const wb = XLSX.utils.book_new()
+  const ws = XLSX.utils.json_to_sheet(rows)
+
+  // 컬럼 너비 설정
+  ws["!cols"] = [
+    { wch: 10 }, // 이름
+    { wch: 6 },  // 학년
+    { wch: 6 },  // 반
+    { wch: 6 },  // 번호
+    { wch: 28 }, // 이메일
+    { wch: 14 }, // 임시비밀번호
+  ]
+
+  XLSX.utils.book_append_sheet(wb, ws, "등록 결과")
+  XLSX.writeFile(wb, `학생_등록_결과_${new Date().toISOString().slice(0, 10)}.xlsx`)
+}
+
+function exportFailedXlsx(result: BatchCreateResponse) {
+  const rows = result.failed.map(({ input, reason }) => ({
+    이름: input.name,
+    학년: input.grade_level,
+    반: input.class_num,
+    번호: input.student_num,
+    실패이유: reason,
+  }))
+
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), "실패 목록")
+  XLSX.writeFile(wb, `학생_등록_실패_${new Date().toISOString().slice(0, 10)}.xlsx`)
 }
 
 interface BatchResultDialogProps {
@@ -24,11 +56,7 @@ interface BatchResultDialogProps {
   result: BatchCreateResponse | null
 }
 
-export function BatchResultDialog({
-  open,
-  onOpenChange,
-  result,
-}: BatchResultDialogProps) {
+export function BatchResultDialog({ open, onOpenChange, result }: BatchResultDialogProps) {
   const [hasSaved, setHasSaved] = useState(false)
   const [tab, setTab] = useState<"created" | "failed">("created")
 
@@ -36,33 +64,15 @@ export function BatchResultDialog({
 
   function handleExportSuccess() {
     if (!result) return
-    const header = "이름,학년,반,번호,이메일,임시비밀번호"
-    const rows = result.created.map(
-      ({ student, tempPassword }) =>
-        `${student.name},${student.grade_level},${student.class_num},${student.student_num},${student.email},${tempPassword}`
-    )
-    downloadCSV([header, ...rows].join("\n"), "학생_등록_결과.csv")
+    exportSuccessXlsx(result)
     setHasSaved(true)
-  }
-
-  function handleExportFailed() {
-    if (!result) return
-    const header = "이름,학년,반,번호,이메일,임시비밀번호,실패이유"
-    const rows = result.failed.map(
-      ({ input, reason }) =>
-        `${input.name},${input.grade_level},${input.class_num},${input.student_num},${input.email ?? ""},${input.password ?? ""},${reason}`
-    )
-    downloadCSV([header, ...rows].join("\n"), "학생_등록_실패_목록.csv")
   }
 
   function handleOpenChange(o: boolean) {
     if (!o && result !== null && result.created.length > 0 && !hasSaved) {
-      if (
-        !window.confirm(
-          "임시 비밀번호를 아직 저장하지 않았습니다.\n이 창을 닫으면 다시 확인할 수 없습니다.\n\n닫으시겠습니까?"
-        )
-      )
-        return
+      if (!window.confirm(
+        "임시 비밀번호를 아직 저장하지 않았습니다.\n이 창을 닫으면 다시 확인할 수 없습니다.\n\n닫으시겠습니까?"
+      )) return
     }
     if (!o) { setHasSaved(false); setTab("created") }
     onOpenChange(o)
@@ -77,62 +87,56 @@ export function BatchResultDialog({
           <DialogTitle>일괄 등록 결과</DialogTitle>
         </DialogHeader>
 
-        {/* Summary */}
+        {/* 요약 */}
         <div className="flex gap-3">
           {result.created.length > 0 && (
-            <div className="flex-1 rounded-lg bg-green-50 border border-green-200 px-4 py-3">
-              <p className="text-sm font-medium text-green-700">
+            <div className="flex-1 rounded-lg border border-green-200 bg-green-50 px-4 py-3 dark:border-green-900 dark:bg-green-950/30">
+              <p className="text-sm font-medium text-green-700 dark:text-green-400">
                 성공 {result.created.length}명
               </p>
             </div>
           )}
           {result.failed.length > 0 && (
-            <div className="flex-1 rounded-lg bg-red-50 border border-red-200 px-4 py-3">
-              <p className="text-sm font-medium text-red-700">
+            <div className="flex-1 rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900 dark:bg-red-950/30">
+              <p className="text-sm font-medium text-red-700 dark:text-red-400">
                 실패 {result.failed.length}명
               </p>
             </div>
           )}
         </div>
 
-        {/* Password warning */}
+        {/* 비밀번호 저장 안내 */}
         {result.created.length > 0 && !hasSaved && (
-          <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3">
-            <p className="text-sm text-amber-800">
-              임시 비밀번호는 이 창을 닫으면 다시 확인할 수 없습니다. 아래 CSV로 저장하세요.
+          <div className="flex items-start justify-between gap-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900 dark:bg-amber-950/30">
+            <p className="text-sm text-amber-800 dark:text-amber-300">
+              임시 비밀번호는 지금만 확인할 수 있습니다. 창을 닫기 전에 반드시 Excel로 저장하세요.
             </p>
+            <Button size="sm" onClick={handleExportSuccess} className="shrink-0">
+              Excel 저장
+            </Button>
           </div>
         )}
 
-        {/* Tab switcher */}
+        {/* 탭 */}
         {showTabs && (
           <div className="flex gap-1 rounded-lg bg-muted p-1 w-fit">
-            <button
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                tab === "created"
-                  ? "bg-background shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-              onClick={() => setTab("created")}
-            >
-              성공 목록
-            </button>
-            <button
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                tab === "failed"
-                  ? "bg-background shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-              onClick={() => setTab("failed")}
-            >
-              실패 목록
-            </button>
+            {(["created", "failed"] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  tab === t ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {t === "created" ? "성공 목록" : "실패 목록"}
+              </button>
+            ))}
           </div>
         )}
 
-        {/* Success table */}
+        {/* 성공 테이블 */}
         {(tab === "created" || !showTabs) && result.created.length > 0 && (
-          <div className="overflow-auto rounded-lg border max-h-72">
+          <div className="overflow-auto rounded-lg border max-h-64">
             <table className="w-full text-sm">
               <thead className="border-b bg-muted/50 sticky top-0">
                 <tr>
@@ -158,9 +162,9 @@ export function BatchResultDialog({
           </div>
         )}
 
-        {/* Failed table */}
+        {/* 실패 테이블 */}
         {(tab === "failed" || !showTabs) && result.failed.length > 0 && (
-          <div className="overflow-auto rounded-lg border max-h-72">
+          <div className="overflow-auto rounded-lg border max-h-64">
             <table className="w-full text-sm">
               <thead className="border-b bg-muted/50 sticky top-0">
                 <tr>
@@ -184,19 +188,19 @@ export function BatchResultDialog({
           </div>
         )}
 
-        {/* Actions */}
+        {/* 하단 액션 */}
         <div className="flex justify-between pt-2">
           <div>
             {result.failed.length > 0 && (
-              <Button variant="outline" size="sm" onClick={handleExportFailed}>
-                실패 목록 재다운로드
+              <Button variant="outline" size="sm" onClick={() => exportFailedXlsx(result)}>
+                실패 목록 Excel 저장
               </Button>
             )}
           </div>
           <div className="flex gap-2">
-            {result.created.length > 0 && (
+            {result.created.length > 0 && hasSaved && (
               <Button variant="outline" size="sm" onClick={handleExportSuccess}>
-                {hasSaved ? "결과 CSV 재저장" : "결과 CSV 저장"}
+                Excel 재저장
               </Button>
             )}
             <Button variant="outline" onClick={() => handleOpenChange(false)}>
