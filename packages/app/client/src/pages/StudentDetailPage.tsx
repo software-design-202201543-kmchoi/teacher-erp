@@ -159,6 +159,9 @@ export function StudentDetailPage() {
         {user?.role === "TEACHER" && (
           <Link to={`/students/${id}/reports`} className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">보고서</Link>
         )}
+        {user?.role === "TEACHER" && (
+          <Link to={`/students/${id}/audit`} className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">이력</Link>
+        )}
       </nav>
 
       {/* 학생부 카드 */}

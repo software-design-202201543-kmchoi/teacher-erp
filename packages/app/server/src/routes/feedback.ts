@@ -3,6 +3,7 @@ import { demoUsersById } from "@teacher-erp/shared-utils"
 import type { IFeedback, IParentUser, FeedbackType, FeedbackVisibility } from "@teacher-erp/shared-types"
 import { authenticate } from "../middleware/authenticate.js"
 import { createNotification } from "../utils/createNotification.js"
+import { writeAuditLog } from "../utils/auditLog.js"
 import { FeedbackDoc } from "../models/feedback.js"
 
 const router = Router()
@@ -79,6 +80,15 @@ router.post("/by-student/:studentId", authenticate, async (req, res) => {
     visibility: visibility as FeedbackVisibility,
   })
 
+  void writeAuditLog({
+    collection: "feedbacks",
+    doc_id: newFeedback._id as string,
+    student_id: studentId,
+    operation: "create",
+    actor_id: user._id,
+    after: newFeedback.toObject() as unknown,
+  })
+
   if (["STUDENT", "ALL"].includes(newFeedback.visibility)) {
     createNotification(studentId, "새 피드백", "교사가 피드백을 작성했습니다.")
   }
@@ -114,6 +124,7 @@ router.put("/:feedbackId", authenticate, async (req, res) => {
     return
   }
 
+  const before = feedback.toObject() as unknown
   const { type, content, visibility } = req.body as {
     type?: unknown
     content?: unknown
@@ -143,6 +154,17 @@ router.put("/:feedbackId", authenticate, async (req, res) => {
   }
 
   const updated = await feedback.save()
+
+  void writeAuditLog({
+    collection: "feedbacks",
+    doc_id: feedback._id as string,
+    student_id: feedback.student_id,
+    operation: "update",
+    actor_id: user._id,
+    before,
+    after: updated.toObject() as unknown,
+  })
+
   res.json(updated.toObject())
 })
 
@@ -167,7 +189,18 @@ router.delete("/:feedbackId", authenticate, async (req, res) => {
     return
   }
 
+  const snapshot = feedback.toObject() as unknown
   await feedback.deleteOne()
+
+  void writeAuditLog({
+    collection: "feedbacks",
+    doc_id: feedback._id as string,
+    student_id: feedback.student_id,
+    operation: "delete",
+    actor_id: user._id,
+    before: snapshot,
+  })
+
   res.status(204).end()
 })
 

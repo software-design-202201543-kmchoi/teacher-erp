@@ -1,6 +1,7 @@
 import { Router } from "express"
 import type { ICounselingRecord } from "@teacher-erp/shared-types"
 import { authenticate } from "../middleware/authenticate.js"
+import { writeAuditLog } from "../utils/auditLog.js"
 import { CounselingDoc } from "../models/counseling.js"
 
 const router = Router()
@@ -64,6 +65,15 @@ router.post("/by-student/:studentId", authenticate, async (req, res) => {
     is_shared,
   })
 
+  void writeAuditLog({
+    collection: "counselingrecords",
+    doc_id: newRecord._id as string,
+    student_id: studentId,
+    operation: "create",
+    actor_id: user._id,
+    after: newRecord.toObject() as unknown,
+  })
+
   res.status(201).json(newRecord)
 })
 
@@ -87,6 +97,7 @@ router.put("/:recordId", authenticate, async (req, res) => {
     return
   }
 
+  const before = record.toObject() as unknown
   const { content, next_plan, is_shared } = req.body as Partial<ICounselingRecord>
 
   if (typeof content === "string") record.content = content
@@ -94,6 +105,17 @@ router.put("/:recordId", authenticate, async (req, res) => {
   if (typeof is_shared === "boolean") record.is_shared = is_shared
 
   const updated = await record.save()
+
+  void writeAuditLog({
+    collection: "counselingrecords",
+    doc_id: record._id as string,
+    student_id: record.student_id,
+    operation: "update",
+    actor_id: user._id,
+    before,
+    after: updated.toObject() as unknown,
+  })
+
   res.json(updated.toObject())
 })
 

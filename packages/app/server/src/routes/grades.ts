@@ -3,6 +3,7 @@ import { calcGrade, demoUsersById } from "@teacher-erp/shared-utils"
 import type { IParentUser } from "@teacher-erp/shared-types"
 import { authenticate } from "../middleware/authenticate.js"
 import { createNotification } from "../utils/createNotification.js"
+import { writeAuditLog } from "../utils/auditLog.js"
 import { GradeDoc } from "../models/grade.js"
 
 const router = Router()
@@ -27,8 +28,7 @@ router.get("/by-student/:studentId", authenticate, async (req, res) => {
   res.json(grades)
 })
 
-// POST /api/grades/by-student/:studentId
-// TEACHER only
+// POST /api/grades/by-student/:studentId — TEACHER only
 router.post("/by-student/:studentId", authenticate, async (req, res) => {
   const user = req.authUser!
 
@@ -59,6 +59,15 @@ router.post("/by-student/:studentId", authenticate, async (req, res) => {
     calculated_grade: calcGrade(score),
   })
 
+  void writeAuditLog({
+    collection: "grades",
+    doc_id: newGrade._id as string,
+    student_id: studentId,
+    operation: "create",
+    actor_id: user._id,
+    after: newGrade.toObject() as unknown,
+  })
+
   createNotification(
     studentId,
     "새 성적 등록",
@@ -71,11 +80,9 @@ router.post("/by-student/:studentId", authenticate, async (req, res) => {
   }
 
   res.status(201).json(newGrade)
-  // Change Streams on the grades collection automatically trigger OLAP re-aggregation
 })
 
-// PUT /api/grades/:gradeId
-// TEACHER only — must own the grade
+// PUT /api/grades/:gradeId — TEACHER only, must own the grade
 router.put("/:gradeId", authenticate, async (req, res) => {
   const user = req.authUser!
 
@@ -97,6 +104,7 @@ router.put("/:gradeId", authenticate, async (req, res) => {
     return
   }
 
+  const before = grade.toObject() as unknown
   const { score } = req.body as { score?: number }
 
   if (typeof score === "number") {
@@ -105,11 +113,21 @@ router.put("/:gradeId", authenticate, async (req, res) => {
   }
 
   const updated = await grade.save()
+
+  void writeAuditLog({
+    collection: "grades",
+    doc_id: gradeId,
+    student_id: grade.student_id,
+    operation: "update",
+    actor_id: user._id,
+    before,
+    after: updated.toObject() as unknown,
+  })
+
   res.json(updated.toObject())
 })
 
-// DELETE /api/grades/:gradeId
-// TEACHER only — must own the grade
+// DELETE /api/grades/:gradeId — TEACHER only, must own the grade
 router.delete("/:gradeId", authenticate, async (req, res) => {
   const user = req.authUser!
 
@@ -131,9 +149,19 @@ router.delete("/:gradeId", authenticate, async (req, res) => {
     return
   }
 
+  const snapshot = grade.toObject() as unknown
   await grade.deleteOne()
+
+  void writeAuditLog({
+    collection: "grades",
+    doc_id: gradeId,
+    student_id: grade.student_id,
+    operation: "delete",
+    actor_id: user._id,
+    before: snapshot,
+  })
+
   res.status(204).end()
-  // Change Streams automatically update OLAP on delete
 })
 
 export default router

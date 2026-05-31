@@ -286,3 +286,20 @@ export async function getAnalyticsSubjectProgress(
     `/api/analytics/students/${studentId}/subject-progress`
   )
 }
+
+// --- Audit Log ---
+export async function getAuditLog(
+  studentId: string,
+  params?: { collection?: string; limit?: number }
+): Promise<import("@teacher-erp/shared-types").AuditLogListResponse> {
+  const qs = params
+    ? "?" + new URLSearchParams(
+        Object.entries(params)
+          .filter(([, v]) => v != null)
+          .map(([k, v]) => [k, String(v)])
+      ).toString()
+    : ""
+  return request<import("@teacher-erp/shared-types").AuditLogListResponse>(
+    `/api/audit/student/${studentId}${qs}`
+  )
+}
