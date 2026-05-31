@@ -37,8 +37,9 @@ resource "aws_ecs_task_definition" "server" {
     portMappings = [{ containerPort = 3001, protocol = "tcp" }]
 
     environment = [
-      { name = "NODE_ENV", value = "production" },
-      { name = "PORT",     value = "3001" },
+      { name = "NODE_ENV",       value = "production" },
+      { name = "PORT",           value = "3001" },
+      { name = "CLIENT_ORIGIN",  value = "https://teacher-erp.kimwash.xyz" },
     ]
 
     # SSM Parameter Store에서 시크릿 주입 (태스크 시작 시)
