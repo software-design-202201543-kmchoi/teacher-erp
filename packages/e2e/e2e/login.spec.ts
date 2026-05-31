@@ -46,7 +46,7 @@ test.describe("로그인 페이지 (SD2-30 ~ SD2-32)", () => {
     await page.fill('input[type="password"]', "teacher1234")
     await page.click('button[type="submit"]')
     await page.waitForURL("/")
-    await expect(page.getByRole("heading", { name: /인증 세션 대시보드/i })).toBeVisible()
+    await expect(page.getByText("담임교사 김선생")).toBeVisible()
   })
 
   test("학생 로그인 성공 시 대시보드로 이동", async ({ page }) => {
@@ -56,7 +56,7 @@ test.describe("로그인 페이지 (SD2-30 ~ SD2-32)", () => {
     await page.fill('input[type="password"]', "student1234")
     await page.click('button[type="submit"]')
     await page.waitForURL("/")
-    await expect(page.getByRole("heading", { name: /인증 세션 대시보드/i })).toBeVisible()
+    await expect(page.getByText("student1@school.local")).toBeVisible()
   })
 
   test("인증된 상태에서 /login 접근 시 대시보드로 리다이렉트", async ({ page, context }) => {
