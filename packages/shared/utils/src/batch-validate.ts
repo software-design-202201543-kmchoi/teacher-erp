@@ -38,7 +38,9 @@ export function autoGenerateEmail(
   class_num: number,
   student_num: number
 ): string {
-  return `${grade_level}${String(class_num).padStart(2, "0")}${String(student_num).padStart(2, "0")}@school.local`;
+  // 입학년도 = 현재년도 - 학년 + 1 (1학년이면 올해 입학)
+  const enrollmentYear = new Date().getFullYear() - grade_level + 1;
+  return `${enrollmentYear}${grade_level}${String(class_num).padStart(2, "0")}${String(student_num).padStart(2, "0")}@school.local`;
 }
 
 export function generateTempPassword(): string {
