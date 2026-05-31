@@ -129,7 +129,7 @@ export function DashboardPage() {
     <main className="mx-auto flex min-h-svh w-full max-w-4xl flex-col gap-6 p-6">
       {/* 환영 헤더 */}
       <section className="rounded-xl border bg-card p-6 shadow-sm">
-        <p className="text-sm text-muted-foreground">Teacher ERP</p>
+        <p className="text-sm text-muted-foreground">학생 관리 시스템</p>
         <h1 className="mt-1 text-2xl font-semibold">
           {user.name}
           <span className="ml-2 text-base font-normal text-muted-foreground">
@@ -228,14 +228,6 @@ export function DashboardPage() {
       {/* 학부모 대시보드 */}
       {isParent && (
         <>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-            <QuickCard
-              title="미읽음 알림"
-              value={unread}
-              sub="알림 확인"
-              to="/notifications"
-            />
-          </div>
           <h2 className="text-base font-semibold text-muted-foreground">자녀 현황</h2>
           {childrenIds.map((childId) => (
             <ChildCard key={childId} childId={childId} />

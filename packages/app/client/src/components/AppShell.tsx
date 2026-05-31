@@ -1,15 +1,18 @@
-import { NavLink, useNavigate } from "react-router-dom"
+import { NavLink, useNavigate, Link } from "react-router-dom"
 import { useAuth } from "@/hooks/useAuth"
 import type { ReactNode } from "react"
 import { useMemo } from "react"
+import { useQuery } from "@tanstack/react-query"
+import { getNotifications } from "@/lib/api"
 import type { IParentUser, IStudentUser } from "@teacher-erp/shared-types"
+
+const APP_NAME = "학생 관리 시스템"
 
 type NavItem = { label: string; to: string; icon: string }
 
 const teacherNav: NavItem[] = [
   { label: "대시보드", to: "/", icon: "🏠" },
   { label: "학생 목록", to: "/students", icon: "👥" },
-  { label: "알림", to: "/notifications", icon: "🔔" },
 ]
 
 interface AppShellProps {
@@ -20,6 +23,14 @@ export function AppShell({ children }: AppShellProps) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
 
+  const { data: notifications = [] } = useQuery({
+    queryKey: ["notifications"],
+    queryFn: getNotifications,
+    enabled: Boolean(user),
+    refetchInterval: 60_000,
+  })
+  const unreadCount = notifications.filter((n) => !n.is_read).length
+
   const navItems = useMemo<NavItem[]>(() => {
     if (!user) return []
     if (user.role === "TEACHER") return teacherNav
@@ -29,21 +40,19 @@ export function AppShell({ children }: AppShellProps) {
         { label: "대시보드", to: "/", icon: "🏠" },
         { label: "성적", to: `/students/${studentId}/grades`, icon: "📊" },
         { label: "피드백", to: `/students/${studentId}/feedback`, icon: "💬" },
-        { label: "알림", to: "/notifications", icon: "🔔" },
       ]
     }
-    // PARENT: 자녀별 성적·피드백 링크
-    const children = (user as IParentUser).children
+    // PARENT
+    const childIds = (user as IParentUser).children
     const items: NavItem[] = [{ label: "대시보드", to: "/", icon: "🏠" }]
-    children.forEach((childId, i) => {
-      const suffix = children.length > 1 ? ` ${i + 1}` : ""
+    childIds.forEach((childId, i) => {
+      const suffix = childIds.length > 1 ? ` ${i + 1}` : ""
       items.push(
         { label: `자녀 학생부${suffix}`, to: `/students/${childId}`, icon: "📋" },
         { label: `자녀 성적${suffix}`, to: `/students/${childId}/grades`, icon: "📊" },
         { label: `자녀 피드백${suffix}`, to: `/students/${childId}/feedback`, icon: "💬" },
       )
     })
-    items.push({ label: "알림", to: "/notifications", icon: "🔔" })
     return items
   }, [user])
 
@@ -54,9 +63,7 @@ export function AppShell({ children }: AppShellProps) {
 
   const sidebarLinkClass = ({ isActive }: { isActive: boolean }) =>
     `flex items-center gap-2 px-3 py-2 text-sm transition-colors rounded-md ${
-      isActive
-        ? "bg-primary/10 text-primary"
-        : "text-muted-foreground hover:bg-muted"
+      isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted"
     }`
 
   return (
@@ -64,25 +71,35 @@ export function AppShell({ children }: AppShellProps) {
       {/* 데스크톱 사이드바 */}
       <aside className="hidden md:flex md:w-56 md:flex-col md:border-r md:bg-card">
         <div className="border-b px-4 py-4">
-          <span className="font-semibold text-sm">Teacher ERP</span>
+          <span className="font-semibold text-sm">{APP_NAME}</span>
           <p className="text-xs text-muted-foreground mt-0.5">{user.name}</p>
         </div>
 
         <nav className="flex-1 space-y-1 p-2">
           {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === "/"}
-              className={sidebarLinkClass}
-            >
+            <NavLink key={item.to} to={item.to} end={item.to === "/"} className={sidebarLinkClass}>
               <span>{item.icon}</span>
               <span>{item.label}</span>
             </NavLink>
           ))}
         </nav>
 
-        <div className="border-t p-2">
+        {/* 알림 버튼 — 사이드바 하단 고정 */}
+        <div className="border-t p-2 space-y-1">
+          <Link
+            to="/notifications"
+            className="flex items-center justify-between rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted"
+          >
+            <span className="flex items-center gap-2">
+              <span>🔔</span>
+              <span>알림</span>
+            </span>
+            {unreadCount > 0 && (
+              <span className="rounded-full bg-destructive px-1.5 py-0.5 text-xs font-semibold text-destructive-foreground">
+                {unreadCount}
+              </span>
+            )}
+          </Link>
           <button
             onClick={() => void logout()}
             className="w-full rounded-md px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-muted"
@@ -96,8 +113,15 @@ export function AppShell({ children }: AppShellProps) {
       <div className="flex flex-1 flex-col">
         {/* 모바일 상단 헤더 */}
         <header className="flex items-center justify-between border-b bg-card px-4 py-3 md:hidden">
-          <span className="font-semibold text-sm">Teacher ERP</span>
-          <span className="text-xs text-muted-foreground">{user.name}</span>
+          <span className="font-semibold text-sm">{APP_NAME}</span>
+          <Link to="/notifications" className="relative text-muted-foreground">
+            <span className="text-lg">🔔</span>
+            {unreadCount > 0 && (
+              <span className="absolute -right-1 -top-1 rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground leading-4 min-w-[16px] text-center">
+                {unreadCount}
+              </span>
+            )}
+          </Link>
         </header>
 
         {/* 페이지 콘텐츠 */}
@@ -120,6 +144,25 @@ export function AppShell({ children }: AppShellProps) {
               <span>{item.label}</span>
             </NavLink>
           ))}
+          {/* 알림 탭 — 모바일 탭바 끝 고정 */}
+          <NavLink
+            to="/notifications"
+            className={({ isActive }) =>
+              `relative flex flex-1 flex-col items-center py-2 text-xs ${
+                isActive ? "text-primary" : "text-muted-foreground"
+              }`
+            }
+          >
+            <span className="relative text-lg">
+              🔔
+              {unreadCount > 0 && (
+                <span className="absolute -right-1 -top-0.5 rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground leading-4 min-w-[14px] text-center">
+                  {unreadCount}
+                </span>
+              )}
+            </span>
+            <span>알림</span>
+          </NavLink>
         </nav>
       </div>
     </div>
