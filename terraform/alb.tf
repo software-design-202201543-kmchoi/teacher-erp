@@ -19,7 +19,7 @@ resource "aws_lb_target_group" "server" {
 
   health_check {
     enabled             = true
-    path                = "/health/ready"
+    path                = "/health"
     healthy_threshold   = 2
     unhealthy_threshold = 3
     timeout             = 5
@@ -53,11 +53,46 @@ resource "aws_lb_target_group" "client" {
   tags = { Name = "${var.project_name}-client-tg" }
 }
 
-# HTTP 리스너 — 기본: 클라이언트 SPA, /api/* → 서버
+# ACM 인증서 — DNS 검증 방식
+resource "aws_acm_certificate" "main" {
+  domain_name       = var.domain
+  validation_method = "DNS"
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  tags = { Name = "${var.project_name}-cert" }
+}
+
+# 인증서 DNS 검증 완료 대기 (검증 CNAME을 도메인 등록기관에 추가한 뒤 apply)
+resource "aws_acm_certificate_validation" "main" {
+  certificate_arn = aws_acm_certificate.main.arn
+}
+
+# HTTP(80) → HTTPS(443) 리다이렉트
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.main.arn
   port              = 80
   protocol          = "HTTP"
+
+  default_action {
+    type = "redirect"
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
+  }
+}
+
+# HTTPS(443) 리스너 — 기본: 클라이언트 SPA
+resource "aws_lb_listener" "https" {
+  load_balancer_arn = aws_lb.main.arn
+  port              = 443
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
+  certificate_arn   = aws_acm_certificate_validation.main.certificate_arn
 
   default_action {
     type             = "forward"
@@ -65,9 +100,9 @@ resource "aws_lb_listener" "http" {
   }
 }
 
-# /api/* → 서버 라우팅 규칙
+# /api/* → 서버 라우팅 규칙 (HTTPS)
 resource "aws_lb_listener_rule" "api" {
-  listener_arn = aws_lb_listener.http.arn
+  listener_arn = aws_lb_listener.https.arn
   priority     = 10
 
   condition {
