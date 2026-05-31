@@ -110,7 +110,7 @@ ${progressContext}
   try {
     const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
     const model = genai.getGenerativeModel({
-      model: "gemini-2.0-flash",
+      model: "gemini-2.5-flash-lite",
       systemInstruction: systemPrompt,
     })
     const result = await model.generateContent(message)
