@@ -107,15 +107,24 @@ ${progressContext}
 
 교사의 질문에 핵심만 간결하게 한국어로 답하세요. 마크다운 사용 가능.`
 
-  const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
-  const model = genai.getGenerativeModel({
-    model: "gemini-2.0-flash",
-    systemInstruction: systemPrompt,
-  })
-  const result = await model.generateContent(message)
-  const reply = result.response.text() || "응답을 생성하지 못했습니다."
-
-  res.json({ reply })
+  try {
+    const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
+    const model = genai.getGenerativeModel({
+      model: "gemini-2.0-flash",
+      systemInstruction: systemPrompt,
+    })
+    const result = await model.generateContent(message)
+    const reply = result.response.text() || "응답을 생성하지 못했습니다."
+    res.json({ reply })
+  } catch (err: unknown) {
+    const errMsg = err instanceof Error ? err.message : String(err)
+    console.error("[chat] Gemini error:", errMsg.slice(0, 300))
+    if (errMsg.includes("429") || errMsg.includes("quota") || errMsg.includes("Too Many Requests")) {
+      res.status(429).json({ message: "Gemini API 요청 한도를 초과했습니다. 잠시 후 다시 시도해 주세요." })
+    } else {
+      res.status(502).json({ message: "AI 응답 생성 중 오류가 발생했습니다." })
+    }
+  }
 })
 
 export default router

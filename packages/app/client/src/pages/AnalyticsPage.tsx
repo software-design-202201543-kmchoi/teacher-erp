@@ -73,8 +73,12 @@ export function AnalyticsPage() {
     onSuccess: (data) => {
       addMessage(studentId, { role: "assistant", content: data.reply })
     },
-    onError: () => {
-      addMessage(studentId, { role: "assistant", content: "응답을 가져오는 데 실패했습니다." })
+    onError: (err: unknown) => {
+      const msg =
+        err instanceof Error && "status" in err && (err as { status: number }).status === 429
+          ? "API 요청 한도 초과입니다. 잠시 후 다시 시도해 주세요."
+          : "응답을 가져오는 데 실패했습니다."
+      addMessage(studentId, { role: "assistant", content: msg })
     },
   })
 
