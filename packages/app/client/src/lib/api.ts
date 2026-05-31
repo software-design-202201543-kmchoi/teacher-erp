@@ -204,6 +204,42 @@ export async function markAllNotificationsRead(): Promise<{ ok: boolean }> {
   return request<{ ok: boolean }>("/api/notifications/read-all", { method: "POST" })
 }
 
+// --- Reports ---
+export async function getGradeReport(
+  studentId: string
+): Promise<import("@teacher-erp/shared-types").GradeReportResponse> {
+  return request<import("@teacher-erp/shared-types").GradeReportResponse>(
+    `/api/reports/student/${studentId}/grades`
+  )
+}
+
+export async function getCounselingReport(
+  studentId: string
+): Promise<import("@teacher-erp/shared-types").CounselingReportResponse> {
+  return request<import("@teacher-erp/shared-types").CounselingReportResponse>(
+    `/api/reports/student/${studentId}/counseling`
+  )
+}
+
+export async function getFeedbackReport(
+  studentId: string
+): Promise<import("@teacher-erp/shared-types").FeedbackReportResponse> {
+  return request<import("@teacher-erp/shared-types").FeedbackReportResponse>(
+    `/api/reports/student/${studentId}/feedback`
+  )
+}
+
+// --- AI Chatbot ---
+export async function sendChatMessage(
+  studentId: string,
+  message: string
+): Promise<{ reply: string }> {
+  return request<{ reply: string }>(`/api/analytics/students/${studentId}/chat`, {
+    method: "POST",
+    body: JSON.stringify({ message }),
+  })
+}
+
 // --- Analytics ---
 export async function getAnalyticsSnapshot(
   studentId: string,

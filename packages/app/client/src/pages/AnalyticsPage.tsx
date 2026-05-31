@@ -1,6 +1,6 @@
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useMutation } from "@tanstack/react-query"
 import {
   RadarChart,
   Radar,
@@ -20,8 +20,10 @@ import {
   getAnalyticsAllSnapshots,
   getAnalyticsSnapshot,
   getAnalyticsSubjectProgress,
+  sendChatMessage,
 } from "@/lib/api"
 import { Button } from "@/components/ui/button"
+import { useChatStore } from "@/store/chatStore"
 
 function StatCard({
   label,
@@ -59,6 +61,26 @@ export function AnalyticsPage() {
   }
 
   const [activeTerm, setActiveTerm] = useState<string>("")
+
+  // Chatbot state
+  const [chatInput, setChatInput] = useState("")
+  const chatBottomRef = useRef<HTMLDivElement>(null)
+  const { messagesByStudent, addMessage } = useChatStore()
+  const chatMessages = messagesByStudent[studentId] ?? []
+
+  const chatMutation = useMutation({
+    mutationFn: (message: string) => sendChatMessage(studentId, message),
+    onSuccess: (data) => {
+      addMessage(studentId, { role: "assistant", content: data.reply })
+    },
+    onError: () => {
+      addMessage(studentId, { role: "assistant", content: "응답을 가져오는 데 실패했습니다." })
+    },
+  })
+
+  useEffect(() => {
+    chatBottomRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [chatMessages])
 
   // Fetch all available snapshots to populate term tabs
   const { data: allSnapshots = [], isLoading: snapshotsLoading } = useQuery({
@@ -245,6 +267,76 @@ export function AnalyticsPage() {
           아직 집계된 학습 데이터가 없습니다. 성적을 입력하면 분석 데이터가 생성됩니다.
         </p>
       )}
+
+      {/* AI 챗봇 패널 */}
+      <section className="rounded-xl border bg-card shadow-sm">
+        <div className="flex items-center gap-2 border-b px-5 py-3">
+          <span className="text-sm font-semibold">AI 학습 현황 질의</span>
+          <span className="rounded bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-700 dark:bg-violet-900/30 dark:text-violet-300">
+            Gemini 기반
+          </span>
+        </div>
+
+        {/* 메시지 목록 */}
+        <div className="flex max-h-80 min-h-32 flex-col gap-3 overflow-y-auto p-5">
+          {chatMessages.length === 0 && (
+            <p className="text-xs text-muted-foreground">
+              학생의 학습 현황에 대해 자유롭게 질문하세요. 예: "이 학생의 취약 과목은?" / "최근 추세를 요약해줘"
+            </p>
+          )}
+          {chatMessages.map((msg, i) => (
+            <div
+              key={i}
+              className={[
+                "max-w-[85%] rounded-xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap",
+                msg.role === "user"
+                  ? "ml-auto bg-indigo-500 text-white"
+                  : "bg-muted text-foreground",
+              ].join(" ")}
+            >
+              {msg.content}
+            </div>
+          ))}
+          {chatMutation.isPending && (
+            <div className="max-w-[85%] rounded-xl bg-muted px-4 py-2.5 text-sm text-muted-foreground animate-pulse">
+              AI가 답변을 생성하는 중...
+            </div>
+          )}
+          <div ref={chatBottomRef} />
+        </div>
+
+        {/* 입력창 */}
+        <div className="flex gap-2 border-t p-4">
+          <input
+            type="text"
+            className="flex-1 rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            placeholder="학생 학습 현황에 대해 질문하세요..."
+            value={chatInput}
+            onChange={(e) => setChatInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey && chatInput.trim() && !chatMutation.isPending) {
+                e.preventDefault()
+                addMessage(studentId, { role: "user", content: chatInput.trim() })
+                chatMutation.mutate(chatInput.trim())
+                setChatInput("")
+              }
+            }}
+            disabled={chatMutation.isPending}
+          />
+          <Button
+            size="sm"
+            onClick={() => {
+              if (!chatInput.trim() || chatMutation.isPending) return
+              addMessage(studentId, { role: "user", content: chatInput.trim() })
+              chatMutation.mutate(chatInput.trim())
+              setChatInput("")
+            }}
+            disabled={!chatInput.trim() || chatMutation.isPending}
+          >
+            전송
+          </Button>
+        </div>
+      </section>
     </main>
   )
 }

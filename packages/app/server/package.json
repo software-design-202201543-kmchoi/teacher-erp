@@ -16,6 +16,7 @@
     "db-test": "tsx src/db-test.ts"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@teacher-erp/shared-db": "workspace:*",
     "@teacher-erp/shared-types": "workspace:*",
     "@teacher-erp/shared-utils": "workspace:*",

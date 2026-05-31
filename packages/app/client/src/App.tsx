@@ -12,6 +12,7 @@ import { FeedbackPage } from "@/pages/FeedbackPage"
 import { CounselingPage } from "@/pages/CounselingPage"
 import { NotificationsPage } from "@/pages/NotificationsPage"
 import { AnalyticsPage } from "@/pages/AnalyticsPage"
+import { ReportsPage } from "@/pages/ReportsPage"
 
 export function App() {
   const { isAuthenticated, isLoading } = useAuth()
@@ -57,6 +58,16 @@ export function App() {
           <AppShell>
             <ProtectedRoute action="read" subject="Student" subjectData={{ _id: "__list__" }}>
               <AnalyticsPage />
+            </ProtectedRoute>
+          </AppShell>
+        }
+      />
+      <Route
+        path="/students/:id/reports"
+        element={
+          <AppShell>
+            <ProtectedRoute action="read" subject="Student" subjectData={{ _id: "__list__" }}>
+              <ReportsPage />
             </ProtectedRoute>
           </AppShell>
         }
