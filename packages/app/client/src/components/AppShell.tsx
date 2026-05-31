@@ -5,14 +5,24 @@ import { useMemo } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { getNotifications } from "@/lib/api"
 import type { IParentUser, IStudentUser } from "@teacher-erp/shared-types"
+import {
+  Home,
+  Users,
+  BarChart2,
+  MessageSquare,
+  ClipboardList,
+  Bell,
+  LogOut,
+  type LucideIcon,
+} from "lucide-react"
 
 const APP_NAME = "학생 관리 시스템"
 
-type NavItem = { label: string; to: string; icon: string }
+type NavItem = { label: string; to: string; Icon: LucideIcon }
 
 const teacherNav: NavItem[] = [
-  { label: "대시보드", to: "/", icon: "🏠" },
-  { label: "학생 목록", to: "/students", icon: "👥" },
+  { label: "대시보드", to: "/", Icon: Home },
+  { label: "학생 목록", to: "/students", Icon: Users },
 ]
 
 interface AppShellProps {
@@ -37,20 +47,20 @@ export function AppShell({ children }: AppShellProps) {
     if (user.role === "STUDENT") {
       const studentId = (user as IStudentUser)._id
       return [
-        { label: "대시보드", to: "/", icon: "🏠" },
-        { label: "성적", to: `/students/${studentId}/grades`, icon: "📊" },
-        { label: "피드백", to: `/students/${studentId}/feedback`, icon: "💬" },
+        { label: "대시보드", to: "/", Icon: Home },
+        { label: "성적", to: `/students/${studentId}/grades`, Icon: BarChart2 },
+        { label: "피드백", to: `/students/${studentId}/feedback`, Icon: MessageSquare },
       ]
     }
     // PARENT
     const childIds = (user as IParentUser).children
-    const items: NavItem[] = [{ label: "대시보드", to: "/", icon: "🏠" }]
+    const items: NavItem[] = [{ label: "대시보드", to: "/", Icon: Home }]
     childIds.forEach((childId, i) => {
       const suffix = childIds.length > 1 ? ` ${i + 1}` : ""
       items.push(
-        { label: `자녀 학생부${suffix}`, to: `/students/${childId}`, icon: "📋" },
-        { label: `자녀 성적${suffix}`, to: `/students/${childId}/grades`, icon: "📊" },
-        { label: `자녀 피드백${suffix}`, to: `/students/${childId}/feedback`, icon: "💬" },
+        { label: `자녀 학생부${suffix}`, to: `/students/${childId}`, Icon: ClipboardList },
+        { label: `자녀 성적${suffix}`, to: `/students/${childId}/grades`, Icon: BarChart2 },
+        { label: `자녀 피드백${suffix}`, to: `/students/${childId}/feedback`, Icon: MessageSquare },
       )
     })
     return items
@@ -76,35 +86,36 @@ export function AppShell({ children }: AppShellProps) {
         </div>
 
         <nav className="flex-1 space-y-1 p-2">
-          {navItems.map((item) => (
-            <NavLink key={item.to} to={item.to} end={item.to === "/"} className={sidebarLinkClass}>
-              <span>{item.icon}</span>
-              <span>{item.label}</span>
+          {navItems.map(({ to, label, Icon }) => (
+            <NavLink key={to} to={to} end={to === "/"} className={sidebarLinkClass}>
+              <Icon size={16} />
+              <span>{label}</span>
             </NavLink>
           ))}
         </nav>
 
-        {/* 알림 버튼 — 사이드바 하단 고정 */}
+        {/* 알림 + 로그아웃 — 사이드바 하단 고정 */}
         <div className="border-t p-2 space-y-1">
           <Link
             to="/notifications"
             className="flex items-center justify-between rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted"
           >
             <span className="flex items-center gap-2">
-              <span>🔔</span>
+              <Bell size={16} />
               <span>알림</span>
             </span>
             {unreadCount > 0 && (
-              <span className="rounded-full bg-destructive px-1.5 py-0.5 text-xs font-semibold text-destructive-foreground">
+              <span className="rounded-full bg-destructive px-1.5 py-0.5 text-xs font-semibold text-destructive-foreground leading-none">
                 {unreadCount}
               </span>
             )}
           </Link>
           <button
             onClick={() => void logout()}
-            className="w-full rounded-md px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-muted"
+            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-muted"
           >
-            로그아웃
+            <LogOut size={16} />
+            <span>로그아웃</span>
           </button>
         </div>
       </aside>
@@ -114,10 +125,10 @@ export function AppShell({ children }: AppShellProps) {
         {/* 모바일 상단 헤더 */}
         <header className="flex items-center justify-between border-b bg-card px-4 py-3 md:hidden">
           <span className="font-semibold text-sm">{APP_NAME}</span>
-          <Link to="/notifications" className="relative text-muted-foreground">
-            <span className="text-lg">🔔</span>
+          <Link to="/notifications" className="relative p-1 text-muted-foreground">
+            <Bell size={20} />
             {unreadCount > 0 && (
-              <span className="absolute -right-1 -top-1 rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground leading-4 min-w-[16px] text-center">
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
                 {unreadCount}
               </span>
             )}
@@ -129,34 +140,34 @@ export function AppShell({ children }: AppShellProps) {
 
         {/* 모바일 하단 탭바 */}
         <nav className="flex border-t bg-card md:hidden">
-          {navItems.map((item) => (
+          {navItems.map(({ to, label, Icon }) => (
             <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === "/"}
+              key={to}
+              to={to}
+              end={to === "/"}
               className={({ isActive }) =>
-                `flex flex-1 flex-col items-center py-2 text-xs ${
+                `flex flex-1 flex-col items-center gap-0.5 py-2 text-xs ${
                   isActive ? "text-primary" : "text-muted-foreground"
                 }`
               }
             >
-              <span className="text-lg">{item.icon}</span>
-              <span>{item.label}</span>
+              <Icon size={20} />
+              <span>{label}</span>
             </NavLink>
           ))}
-          {/* 알림 탭 — 모바일 탭바 끝 고정 */}
+          {/* 알림 탭 — 탭바 끝 고정 */}
           <NavLink
             to="/notifications"
             className={({ isActive }) =>
-              `relative flex flex-1 flex-col items-center py-2 text-xs ${
+              `relative flex flex-1 flex-col items-center gap-0.5 py-2 text-xs ${
                 isActive ? "text-primary" : "text-muted-foreground"
               }`
             }
           >
-            <span className="relative text-lg">
-              🔔
+            <span className="relative">
+              <Bell size={20} />
               {unreadCount > 0 && (
-                <span className="absolute -right-1 -top-0.5 rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground leading-4 min-w-[14px] text-center">
+                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-0.5 text-[9px] font-bold text-destructive-foreground">
                   {unreadCount}
                 </span>
               )}
