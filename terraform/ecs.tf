@@ -43,8 +43,9 @@ resource "aws_ecs_task_definition" "server" {
 
     # SSM Parameter Store에서 시크릿 주입 (태스크 시작 시)
     secrets = [
-      { name = "MONGODB_URI", valueFrom = aws_ssm_parameter.mongodb_uri.arn },
-      { name = "JWT_SECRET",  valueFrom = aws_ssm_parameter.jwt_secret.arn  },
+      { name = "MONGODB_URI",    valueFrom = aws_ssm_parameter.mongodb_uri.arn    },
+      { name = "JWT_SECRET",     valueFrom = aws_ssm_parameter.jwt_secret.arn     },
+      { name = "GEMINI_API_KEY", valueFrom = aws_ssm_parameter.gemini_api_key.arn },
     ]
 
     logConfiguration = {

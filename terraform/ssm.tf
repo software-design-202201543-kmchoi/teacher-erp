@@ -25,3 +25,17 @@ resource "aws_ssm_parameter" "jwt_secret" {
     ignore_changes = [value]
   }
 }
+
+resource "aws_ssm_parameter" "gemini_api_key" {
+  name        = "/${var.project_name}/GEMINI_API_KEY"
+  description = "Google Gemini API 키 (AI 챗봇)"
+  type        = "SecureString"
+  value       = "PLACEHOLDER"
+
+  # 실제 값은 배포 후 아래 명령어로 설정:
+  # aws ssm put-parameter --name /teacher-erp/GEMINI_API_KEY \
+  #   --value "AIza..." --type SecureString --overwrite
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
