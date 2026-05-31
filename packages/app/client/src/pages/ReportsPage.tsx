@@ -1,7 +1,8 @@
-import { useState, useRef } from "react"
+import { useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { useQuery } from "@tanstack/react-query"
 import * as XLSX from "xlsx"
+import { Document, Page, Text, View, StyleSheet, pdf } from "@react-pdf/renderer"
 import { useAuth } from "@/hooks/useAuth"
 import { getGradeReport, getCounselingReport, getFeedbackReport } from "@/lib/api"
 import { Button } from "@/components/ui/button"
@@ -18,7 +19,6 @@ export function ReportsPage() {
   const { id: studentId = "" } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { user } = useAuth()
-  const printRef = useRef<HTMLDivElement>(null)
 
   const [activeTab, setActiveTab] = useState<Tab>("grades")
 
@@ -50,8 +50,62 @@ export function ReportsPage() {
 
   const studentName = gradeReport?.student.name ?? counselingReport?.student.name ?? feedbackReport?.student.name ?? ""
 
-  function handlePdfDownload() {
-    window.print()
+  async function handlePdfDownload() {
+    if (!gradeReport || !counselingReport || !feedbackReport) return
+
+    const styles = StyleSheet.create({
+      page: { padding: 24, fontSize: 10, lineHeight: 1.5 },
+      title: { fontSize: 16, marginBottom: 8, fontWeight: 700 },
+      sectionTitle: { fontSize: 12, marginTop: 12, marginBottom: 6, fontWeight: 700 },
+      row: { marginBottom: 2 },
+      summary: { marginBottom: 6 },
+    })
+
+    const doc = (
+      <Document>
+        <Page size="A4" style={styles.page}>
+          <Text style={styles.title}>{studentName || studentId} 보고서</Text>
+          <Text style={styles.summary}>생성일: {new Date().toLocaleDateString("ko-KR")}</Text>
+
+          <Text style={styles.sectionTitle}>성적 보고서</Text>
+          <Text style={styles.summary}>
+            전체 평균 {gradeReport.allTimeAverage.toFixed(1)}점 / 총 과목 {gradeReport.totalSubjects}개
+          </Text>
+          {gradeReport.termSummaries.map((ts) => (
+            <View key={ts.term} style={styles.row}>
+              <Text>{ts.term} - 평균 {ts.average.toFixed(1)}점 / {ts.overallGrade}등급</Text>
+              {ts.grades.map((g) => (
+                <Text key={g._id}>· {g.subject_id.replace(/^subject-/, "")}: {g.score}점 ({g.calculated_grade}등급)</Text>
+              ))}
+            </View>
+          ))}
+
+          <Text style={styles.sectionTitle}>상담 보고서</Text>
+          <Text style={styles.summary}>
+            총 상담 {counselingReport.totalSessions}회 / 공유 {counselingReport.sharedSessions}회
+          </Text>
+          {counselingReport.records.map((r) => (
+            <Text key={r._id}>· {r.counsel_date} {r.is_shared ? "[공유]" : ""} {r.content}</Text>
+          ))}
+
+          <Text style={styles.sectionTitle}>피드백 요약</Text>
+          <Text style={styles.summary}>
+            총 피드백 {feedbackReport.totalFeedbacks}건
+          </Text>
+          {feedbackReport.recentFeedbacks.map((f) => (
+            <Text key={f._id}>· [{f.type}/{f.visibility}] {f.content}</Text>
+          ))}
+        </Page>
+      </Document>
+    )
+
+    const blob = await pdf(doc).toBlob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `${studentName || studentId}_종합보고서.pdf`
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   function handleExcelDownload() {
@@ -130,10 +184,10 @@ export function ReportsPage() {
       )}
 
       {/* 출력 영역 */}
-      <div ref={printRef} className="flex flex-col gap-6">
+      <div className="flex flex-col gap-6">
 
         {/* 성적 보고서 */}
-        {(activeTab === "grades" || window.matchMedia?.("print").matches) && gradeReport && (
+        {(activeTab === "grades") && gradeReport && (
           <section className="rounded-xl border bg-card p-6 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold">성적 보고서</h2>
@@ -250,13 +304,6 @@ export function ReportsPage() {
         )}
       </div>
 
-      {/* PDF용 출력 안내 */}
-      <style>{`
-        @media print {
-          .print\\:hidden { display: none !important; }
-          body { background: white; }
-        }
-      `}</style>
     </main>
   )
 }

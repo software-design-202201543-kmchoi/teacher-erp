@@ -1,8 +1,8 @@
 import { NavLink, useNavigate, Link } from "react-router-dom"
 import { useAuth } from "@/hooks/useAuth"
 import type { ReactNode } from "react"
-import { useMemo } from "react"
-import { useQuery } from "@tanstack/react-query"
+import { useEffect, useMemo } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { getNotifications } from "@/lib/api"
 import type { IParentUser, IStudentUser } from "@teacher-erp/shared-types"
 import {
@@ -34,6 +34,7 @@ interface AppShellProps {
 export function AppShell({ children }: AppShellProps) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
 
   const { data: notifications = [] } = useQuery({
     queryKey: ["notifications"],
@@ -42,6 +43,18 @@ export function AppShell({ children }: AppShellProps) {
     refetchInterval: 60_000,
   })
   const unreadCount = notifications.filter((n) => !n.is_read).length
+
+  useEffect(() => {
+    if (!user) return
+    const source = new EventSource("/api/notifications/stream")
+    source.addEventListener("notification", () => {
+      void queryClient.invalidateQueries({ queryKey: ["notifications"] })
+    })
+    source.onerror = () => {
+      // fallback polling(60s)은 유지. SSE 장애 시 자동 재연결은 브라우저가 처리.
+    }
+    return () => source.close()
+  }, [user, queryClient])
 
   const navItems = useMemo<NavItem[]>(() => {
     if (!user) return []

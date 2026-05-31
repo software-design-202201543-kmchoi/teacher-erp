@@ -1,5 +1,6 @@
 import type { INotification } from "@teacher-erp/shared-types"
 import { demoNotifications, demoNotificationsByUserId } from "@teacher-erp/shared-utils"
+import { broadcastNotification } from "./notificationStream.js"
 
 export function createNotification(
   userId: string,
@@ -19,5 +20,6 @@ export function createNotification(
   demoNotifications.push(notif)
   if (!demoNotificationsByUserId[userId]) demoNotificationsByUserId[userId] = []
   demoNotificationsByUserId[userId].push(notif)
+  broadcastNotification(userId)
   return notif
 }

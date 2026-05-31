@@ -1,6 +1,10 @@
 import { Router } from "express"
 import { demoNotificationsByUserId } from "@teacher-erp/shared-utils"
 import { authenticate } from "../middleware/authenticate.js"
+import {
+  subscribeNotificationStream,
+  unsubscribeNotificationStream,
+} from "../utils/notificationStream.js"
 
 const router = Router()
 
@@ -25,6 +29,30 @@ router.post("/read-all", authenticate, (req, res) => {
     n.updatedAt = new Date()
   })
   res.json({ ok: true })
+})
+
+// GET /api/notifications/stream — SSE real-time updates
+router.get("/stream", authenticate, (req, res) => {
+  const user = req.authUser!
+
+  res.setHeader("Content-Type", "text/event-stream")
+  res.setHeader("Cache-Control", "no-cache")
+  res.setHeader("Connection", "keep-alive")
+
+  subscribeNotificationStream(user._id, res)
+  res.write(`event: connected\n`)
+  res.write(`data: ${JSON.stringify({ ok: true })}\n\n`)
+
+  const keepAlive = setInterval(() => {
+    res.write(`event: ping\n`)
+    res.write(`data: ${Date.now()}\n\n`)
+  }, 25_000)
+
+  req.on("close", () => {
+    clearInterval(keepAlive)
+    unsubscribeNotificationStream(user._id, res)
+    res.end()
+  })
 })
 
 // POST /api/notifications/:id/read — 읽음 처리
