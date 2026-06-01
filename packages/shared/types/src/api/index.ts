@@ -9,3 +9,4 @@ export * from "./reports.js";
 export * from "./analytics.js";
 export * from "./audit.js";
 export * from "./search.js";
+export * from "./admin.js";

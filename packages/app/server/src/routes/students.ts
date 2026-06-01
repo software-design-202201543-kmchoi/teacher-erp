@@ -1,5 +1,6 @@
 import { Router } from "express"
 import type { IStudentUser, IParentUser } from "@teacher-erp/shared-types"
+import { FieldDefinitionModel } from "@teacher-erp/shared-db"
 import type {
   BatchStudentInput,
   BatchCreatedResult,
@@ -69,7 +70,7 @@ router.get("/:id", (req, res) => {
 })
 
 // GET /:id/academic-record — same access control as GET /:id
-router.get("/:id/academic-record", (req, res) => {
+router.get("/:id/academic-record", async (req, res) => {
   if (!req.ability || !req.authUser) {
     res.status(401).json({ message: "Unauthenticated" })
     return
@@ -95,7 +96,19 @@ router.get("/:id/academic-record", (req, res) => {
     return
   }
 
-  res.json({ academicRecord: record })
+  // STUDENT/PARENT는 PUBLIC 항목만 custom_fields에서 조회
+  const allFields = await FieldDefinitionModel.find({}).lean()
+  const visibleFieldIds =
+    req.authUser.role === "TEACHER"
+      ? new Set(allFields.map((f) => f.field_id))
+      : new Set(allFields.filter((f) => f.visibility === "PUBLIC" && f.is_active).map((f) => f.field_id))
+
+  const rawCustom = (record as unknown as Record<string, unknown>).custom_fields as Record<string, string> | undefined
+  const custom_fields = rawCustom
+    ? Object.fromEntries(Object.entries(rawCustom).filter(([k]) => visibleFieldIds.has(k)))
+    : {}
+
+  res.json({ academicRecord: { ...record, custom_fields }, fieldDefinitions: allFields.filter((f) => visibleFieldIds.has(f.field_id)) })
 })
 
 // PUT /:id/academic-record — TEACHER only
@@ -124,13 +137,14 @@ router.put("/:id/academic-record", (req, res) => {
     return
   }
 
-  const { attendance_info, special_notes } = req.body as {
+  const { attendance_info, special_notes, custom_fields } = req.body as {
     attendance_info?: {
       absences?: number
       tardies?: number
       earlyLeaves?: number
     }
     special_notes?: string
+    custom_fields?: Record<string, string>
   }
 
   if (attendance_info !== undefined) {
@@ -147,6 +161,12 @@ router.put("/:id/academic-record", (req, res) => {
 
   if (special_notes !== undefined) {
     record.special_notes = special_notes
+  }
+
+  if (custom_fields !== undefined) {
+    const rec = record as unknown as Record<string, unknown>
+    const existing = rec.custom_fields as Record<string, string> | undefined ?? {}
+    rec.custom_fields = { ...existing, ...custom_fields }
   }
 
   record.updatedAt = new Date()

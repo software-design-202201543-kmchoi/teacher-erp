@@ -14,6 +14,7 @@ import {
   Bell,
   LogOut,
   Search,
+  Settings,
   type LucideIcon,
 } from "lucide-react"
 
@@ -25,6 +26,7 @@ const teacherNav: NavItem[] = [
   { label: "대시보드", to: "/", Icon: Home },
   { label: "학생 목록", to: "/students", Icon: Users },
   { label: "통합 검색", to: "/search", Icon: Search },
+  { label: "관리자", to: "/admin", Icon: Settings },
 ]
 
 interface AppShellProps {

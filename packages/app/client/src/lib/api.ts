@@ -315,6 +315,44 @@ export async function searchIntegrated(params: {
   )
 }
 
+// --- Admin ---
+export async function adminGetUsers(params?: { role?: string; page?: number; limit?: number }): Promise<import("@teacher-erp/shared-types").AdminUserListResponse> {
+  const qs = params ? "?" + new URLSearchParams(Object.entries(params).filter(([, v]) => v != null).map(([k, v]) => [k, String(v)])).toString() : ""
+  return request<import("@teacher-erp/shared-types").AdminUserListResponse>(`/api/admin/users${qs}`)
+}
+
+export async function adminCreateUser(body: import("@teacher-erp/shared-types").CreateUserInput): Promise<import("@teacher-erp/shared-types").AdminUserResponse> {
+  return request<import("@teacher-erp/shared-types").AdminUserResponse>("/api/admin/users", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  })
+}
+
+export async function adminUpdateUser(id: string, body: import("@teacher-erp/shared-types").UpdateUserInput): Promise<import("@teacher-erp/shared-types").AdminUserResponse> {
+  return request<import("@teacher-erp/shared-types").AdminUserResponse>(`/api/admin/users/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  })
+}
+
+export async function adminDeleteUser(id: string): Promise<void> {
+  await request<void>(`/api/admin/users/${id}`, { method: "DELETE" })
+}
+
+export async function adminAddParentLink(parentId: string, studentId: string): Promise<void> {
+  await request<void>(`/api/admin/users/${parentId}/parent-links`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ studentId }),
+  })
+}
+
+export async function adminRemoveParentLink(parentId: string, studentId: string): Promise<void> {
+  await request<void>(`/api/admin/users/${parentId}/parent-links/${studentId}`, { method: "DELETE" })
+}
+
 // --- Audit Log ---
 export async function getAuditLog(
   studentId: string,

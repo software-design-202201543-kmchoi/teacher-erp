@@ -1,13 +1,13 @@
 import mongoose, { Schema } from 'mongoose';
 
 export type AuditOperation = 'create' | 'update' | 'delete';
-export type AuditCollection = 'grades' | 'feedbacks' | 'counselingrecords';
+export type AuditCollection = 'grades' | 'feedbacks' | 'counselingrecords' | 'users';
 
 const auditLogSchema = new Schema(
   {
     collection: {
       type: String,
-      enum: ['grades', 'feedbacks', 'counselingrecords'],
+      enum: ['grades', 'feedbacks', 'counselingrecords', 'users'],
       required: true,
     },
     doc_id: { type: String, required: true },

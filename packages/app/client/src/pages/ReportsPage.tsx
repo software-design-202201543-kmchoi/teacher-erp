@@ -52,13 +52,21 @@ export function ReportsPage() {
       sectionTitle: { fontSize: 12, marginTop: 12, marginBottom: 6, fontWeight: 700 },
       row: { marginBottom: 2 },
       summary: { marginBottom: 6 },
+      meta: { fontSize: 9, color: "#666", marginBottom: 2 },
     })
+
+    const now = new Date()
+    const generatedAt = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`
+    const terms = gradeReport.termSummaries.map((ts) => ts.term).sort()
+    const termRange = terms.length > 0 ? `${terms[0]} ~ ${terms[terms.length - 1]}` : "—"
 
     const doc = (
       <Document>
         <Page size="A4" style={styles.page}>
           <Text style={styles.title}>{studentName || studentId} 보고서</Text>
-          <Text style={styles.summary}>생성일: {new Date().toLocaleDateString("ko-KR")}</Text>
+          <Text style={styles.meta}>생성일시: {generatedAt}</Text>
+          <Text style={styles.meta}>대상 학기: {termRange}</Text>
+          <Text style={styles.meta}>열람 권한: {gradeReport.student.name} 담당 교사/본인/학부모</Text>
 
           <Text style={styles.sectionTitle}>성적 보고서</Text>
           <Text style={styles.summary}>
@@ -109,6 +117,20 @@ export function ReportsPage() {
     if (!gradeReport) return
 
     const wb = XLSX.utils.book_new()
+
+    // 메타정보 시트 (첫 번째)
+    const now = new Date()
+    const generatedAt = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`
+    const terms = gradeReport.termSummaries.map((ts) => ts.term).sort()
+    const termRange = terms.length > 0 ? `${terms[0]} ~ ${terms[terms.length - 1]}` : "—"
+    const metaRows = [
+      { 항목: "학생명", 값: studentName || studentId },
+      { 항목: "생성일시", 값: generatedAt },
+      { 항목: "대상 학기", 값: termRange },
+      { 항목: "전체 평균", 값: `${gradeReport.allTimeAverage.toFixed(1)}점` },
+      { 항목: "총 과목수", 값: String(gradeReport.totalSubjects) },
+    ]
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(metaRows), "메타정보")
 
     // 성적 상세
     const gradeRows = gradeReport.termSummaries.flatMap((ts) =>

@@ -11,6 +11,8 @@ import analyticsRouter from "./routes/analytics.js"
 import auditRouter from "./routes/audit.js"
 import searchRouter from "./routes/search.js"
 import securityRouter from "./routes/security.js"
+import adminRouter from "./routes/admin.js"
+import fieldDefinitionsRouter from "./routes/field-definitions.js"
 import { accessLog } from "./middleware/accessLog.js"
 import { connectDB } from "./db.js"
 import { seedDatabase } from "./data/seed.js"
@@ -53,6 +55,8 @@ app.use("/api/analytics", analyticsRouter)
 app.use("/api/audit", auditRouter)
 app.use("/api/search", searchRouter)
 app.use("/api/security", securityRouter)
+app.use("/api/admin", adminRouter)
+app.use("/api/field-definitions", fieldDefinitionsRouter)
 
 connectDB()
   .then(async () => {

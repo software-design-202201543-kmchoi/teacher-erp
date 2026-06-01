@@ -16,4 +16,8 @@ const feedbackSchema = new Schema({
   },
 }, { timestamps: true });
 
+feedbackSchema.index({ student_id: 1, createdAt: -1 });
+feedbackSchema.index({ teacher_id: 1, createdAt: -1 });
+feedbackSchema.index({ student_id: 1, visibility: 1 });
+
 export const FeedbackModel = mongoose.model('Feedback', feedbackSchema);

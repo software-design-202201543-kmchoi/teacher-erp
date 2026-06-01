@@ -28,10 +28,20 @@
    - 운영 클러스터로 데이터 재적재 후 애플리케이션 재기동
 
 ## 4) 정합성 점검 체크리스트
-- 학생-학부모 연결(parent_student) 무결성
-- 성적(grade)별 calculated_grade 값 재계산 검증
-- OLAP 스냅샷(student_learning_snapshot) 재집계 실행
-- 알림(notification) 미읽음 카운트 샘플 검증
+
+복구 완료 후 아래 스크립트를 실행한다:
+
+```bash
+MONGODB_URI="<복구된_클러스터_URI>" npx tsx scripts/verify-integrity.ts
+```
+
+스크립트가 자동으로 검증하는 항목:
+- 학생-학부모 연결(`parent_student`) 무결성 — 고아 참조 탐지
+- 성적(`grade.calculated_grade`) 등급 재계산 일치 여부
+- OLAP 스냅샷(`student_learning_snapshot`) 평균점수 드리프트 (10% 초과 시 경고)
+- 최근 24시간 AuditLog 연속성
+
+오류 건수 > 0이면 exit code 1로 종료되며, 서비스 전환 전 반드시 수동 확인이 필요하다.
 
 ## 5) 월간 복구 리허설
 - 매월 1회 샘플 학생 3명 기준으로 복구 리허설 수행

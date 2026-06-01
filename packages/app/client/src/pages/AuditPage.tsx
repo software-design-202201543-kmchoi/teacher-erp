@@ -10,6 +10,7 @@ const COLLECTION_LABELS: Record<AuditCollection, string> = {
   grades: "성적",
   feedbacks: "피드백",
   counselingrecords: "상담",
+  users: "사용자",
 }
 
 const OPERATION_LABELS: Record<string, { label: string; color: string }> = {

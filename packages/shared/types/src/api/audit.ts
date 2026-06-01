@@ -1,5 +1,5 @@
 export type AuditOperation = 'create' | 'update' | 'delete';
-export type AuditCollection = 'grades' | 'feedbacks' | 'counselingrecords';
+export type AuditCollection = 'grades' | 'feedbacks' | 'counselingrecords' | 'users';
 
 export interface AuditLogEntry {
   _id: string;

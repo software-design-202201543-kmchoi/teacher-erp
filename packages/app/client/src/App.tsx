@@ -15,6 +15,7 @@ import { AnalyticsPage } from "@/pages/AnalyticsPage"
 import { ReportsPage } from "@/pages/ReportsPage"
 import { AuditPage } from "@/pages/AuditPage"
 import { SearchPage } from "@/pages/SearchPage"
+import { AdminPage } from "@/pages/AdminPage"
 
 export function App() {
   const { isAuthenticated, isLoading } = useAuth()
@@ -89,6 +90,16 @@ export function App() {
         element={<AppShell><NotificationsPage /></AppShell>}
       />
       <Route path="/search" element={<AppShell><SearchPage /></AppShell>} />
+      <Route
+        path="/admin"
+        element={
+          <AppShell>
+            <ProtectedRoute action="read" subject="Student" subjectData={{ _id: "__list__" }}>
+              <AdminPage />
+            </ProtectedRoute>
+          </AppShell>
+        }
+      />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
