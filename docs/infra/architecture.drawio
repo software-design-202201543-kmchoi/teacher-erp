@@ -1,0 +1,284 @@
+<mxfile host="app.diagrams.net" modified="2026-06-01T00:00:00.000Z" agent="Claude Code" version="21.0.0" type="device">
+  <diagram id="teacher-erp-aws-arch" name="Teacher ERP — AWS Architecture">
+    <mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="1300" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <!-- SWIM LANES                                                      -->
+        <!-- ══════════════════════════════════════════════════════════════ -->
+
+        <!-- Internet -->
+        <mxCell id="zone-internet" value="Internet" style="swimlane;startSize=30;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=13;align=left;horizontal=0;" vertex="1" parent="1">
+          <mxGeometry x="30" y="40" width="200" height="380" as="geometry" />
+        </mxCell>
+
+        <!-- CI/CD -->
+        <mxCell id="zone-cicd" value="CI/CD (GitHub)" style="swimlane;startSize=30;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=13;align=left;horizontal=0;" vertex="1" parent="1">
+          <mxGeometry x="30" y="450" width="200" height="280" as="geometry" />
+        </mxCell>
+
+        <!-- AWS region wrapper -->
+        <mxCell id="zone-aws" value="AWS ap-northeast-2" style="swimlane;startSize=30;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="270" y="40" width="1380" height="760" as="geometry" />
+        </mxCell>
+
+        <!-- VPC -->
+        <mxCell id="zone-vpc" value="VPC" style="swimlane;startSize=25;fillColor=#f5f5f5;strokeColor=#666;fontColor=#333;fontStyle=1;fontSize=11;dashed=1;" vertex="1" parent="zone-aws">
+          <mxGeometry x="20" y="50" width="1020" height="620" as="geometry" />
+        </mxCell>
+
+        <!-- Public subnet -->
+        <mxCell id="zone-public" value="Public Subnet" style="swimlane;startSize=22;fillColor=#fff9c4;strokeColor=#f9a825;fontStyle=1;fontSize=10;" vertex="1" parent="zone-vpc">
+          <mxGeometry x="20" y="50" width="380" height="290" as="geometry" />
+        </mxCell>
+
+        <!-- Private subnet -->
+        <mxCell id="zone-private" value="Private Subnet" style="swimlane;startSize=22;fillColor=#fce4ec;strokeColor=#c62828;fontStyle=1;fontSize=10;" vertex="1" parent="zone-vpc">
+          <mxGeometry x="430" y="50" width="560" height="290" as="geometry" />
+        </mxCell>
+
+        <!-- Managed services -->
+        <mxCell id="zone-mgmt" value="AWS Managed Services" style="swimlane;startSize=22;fillColor=#ede7f6;strokeColor=#4527a0;fontStyle=1;fontSize=10;" vertex="1" parent="zone-vpc">
+          <mxGeometry x="20" y="390" width="980" height="200" as="geometry" />
+        </mxCell>
+
+        <!-- External SaaS -->
+        <mxCell id="zone-external" value="External SaaS" style="swimlane;startSize=25;fillColor=#fafafa;strokeColor=#37474f;fontStyle=1;fontSize=11;dashed=1;" vertex="1" parent="zone-aws">
+          <mxGeometry x="1060" y="50" width="300" height="620" as="geometry" />
+        </mxCell>
+
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <!-- INTERNET                                                        -->
+        <!-- ══════════════════════════════════════════════════════════════ -->
+
+        <mxCell id="browser" value="&lt;b&gt;User Browser&lt;/b&gt;&lt;br/&gt;교사 / 학생 / 학부모" style="shape=mxgraph.cisco.computers_and_peripherals.pc;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;aspect=fixed;labelPosition=center;align=center;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="zone-internet">
+          <mxGeometry x="55" y="70" width="80" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <!-- CI/CD                                                           -->
+        <!-- ══════════════════════════════════════════════════════════════ -->
+
+        <mxCell id="github" value="&lt;b&gt;GitHub&lt;/b&gt;&lt;br/&gt;main branch push" style="shape=mxgraph.veeam2.github;html=1;fillColor=#d5e8d4;strokeColor=#82b366;aspect=fixed;labelPosition=center;align=center;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="zone-cicd">
+          <mxGeometry x="55" y="55" width="80" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="gha" value="&lt;b&gt;GitHub Actions&lt;/b&gt;&lt;br/&gt;OIDC Auth (no long-lived keys)&lt;br/&gt;① docker build + push ECR&lt;br/&gt;② vite build + s3 sync&lt;br/&gt;③ ecs update-service&lt;br/&gt;④ CF invalidation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;align=left;spacingLeft=6;" vertex="1" parent="zone-cicd">
+          <mxGeometry x="15" y="175" width="165" height="95" as="geometry" />
+        </mxCell>
+
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <!-- AWS EDGE (outside VPC)                                          -->
+        <!-- ══════════════════════════════════════════════════════════════ -->
+
+        <mxCell id="cloudfront" value="&lt;b&gt;Amazon CloudFront&lt;/b&gt;&lt;br/&gt;teacher-erp.kimwash.xyz&lt;br/&gt;PriceClass_200&lt;br/&gt;/api/* → ALB (no cache)&lt;br/&gt;/* → S3 (long cache)" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.cloudfront;html=1;labelBackgroundColor=none;sketch=0;fontStyle=1;fontSize=10;fillColor=#8C4FFF;strokeColor=none;fontColor=#ffffff;labelPosition=center;align=center;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="zone-aws">
+          <mxGeometry x="30" y="200" width="70" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="acm" value="&lt;b&gt;ACM&lt;/b&gt;&lt;br/&gt;TLS (free)" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.certificate_manager;html=1;labelBackgroundColor=none;sketch=0;fontSize=9;fillColor=#DD344C;strokeColor=none;fontColor=#ffffff;labelPosition=center;align=center;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="zone-aws">
+          <mxGeometry x="30" y="380" width="50" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <!-- PUBLIC SUBNET                                                   -->
+        <!-- ══════════════════════════════════════════════════════════════ -->
+
+        <mxCell id="alb" value="&lt;b&gt;Application Load Balancer&lt;/b&gt;&lt;br/&gt;HTTP · Target Group → :3001" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.application_load_balancer;html=1;labelBackgroundColor=none;sketch=0;fontStyle=1;fontSize=10;fillColor=#8C4FFF;strokeColor=none;fontColor=#ffffff;labelPosition=center;align=center;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="zone-public">
+          <mxGeometry x="140" y="70" width="70" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s3" value="&lt;b&gt;S3 Bucket&lt;/b&gt;&lt;br/&gt;SPA static files&lt;br/&gt;(React + Vite build)" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.s3;html=1;labelBackgroundColor=none;sketch=0;fontStyle=1;fontSize=10;fillColor=#3F8624;strokeColor=none;fontColor=#ffffff;labelPosition=center;align=center;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="zone-public">
+          <mxGeometry x="60" y="190" width="70" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="nat" value="&lt;b&gt;NAT Gateway&lt;/b&gt;&lt;br/&gt;(단일 AZ, ~$30/월)" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.nat_gateway;html=1;labelBackgroundColor=none;sketch=0;fontSize=9;fillColor=#8C4FFF;strokeColor=none;fontColor=#ffffff;labelPosition=center;align=center;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="zone-public">
+          <mxGeometry x="260" y="190" width="60" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <!-- PRIVATE SUBNET — ECS Fargate                                    -->
+        <!-- ══════════════════════════════════════════════════════════════ -->
+
+        <!-- ECS Cluster outer box -->
+        <mxCell id="ecs-cluster-box" value="ECS Fargate Cluster  (NOT EKS — no k8s control plane)" style="swimlane;startSize=24;fillColor=#fff3e0;strokeColor=#e65100;fontStyle=1;fontSize=10;" vertex="1" parent="zone-private">
+          <mxGeometry x="30" y="40" width="490" height="220" as="geometry" />
+        </mxCell>
+
+        <!-- ECS Task box -->
+        <mxCell id="ecs-task-box" value="ECS Fargate Task  ·  0.25 vCPU / 512 MB  ·  Spot 75% + On-Demand 25%" style="swimlane;startSize=22;fillColor=#ffe0b2;strokeColor=#e65100;fontStyle=0;fontSize=9;" vertex="1" parent="ecs-cluster-box">
+          <mxGeometry x="20" y="40" width="450" height="155" as="geometry" />
+        </mxCell>
+
+        <!-- Express server node -->
+        <mxCell id="express" value="&lt;b&gt;Express 5 Server&lt;/b&gt;&lt;br/&gt;Node 20 · ESM · Port 3001&lt;br/&gt;━━━━━━━━━━━━━━━━━━&lt;br/&gt;/api/auth   · /api/students&lt;br/&gt;/api/grades  · /api/feedback&lt;br/&gt;/api/counseling · /api/reports&lt;br/&gt;/api/notifications (SSE)&lt;br/&gt;/api/analytics  · /api/audit&lt;br/&gt;/api/search · /api/admin&lt;br/&gt;━━━━━━━━━━━━━━━━━━&lt;br/&gt;Middleware: accessLog → CORS&lt;br/&gt;→ authenticate (JWT) → authorize (CASL)&lt;br/&gt;━━━━━━━━━━━━━━━━━━&lt;br/&gt;OLAP Worker: MongoDB Change Streams&lt;br/&gt;(grades / feedback / counseling)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff8e1;strokeColor=#f57f17;fontSize=9;align=left;spacingLeft=8;verticalAlign=top;" vertex="1" parent="ecs-task-box">
+          <mxGeometry x="10" y="30" width="260" height="110" as="geometry" />
+        </mxCell>
+
+        <!-- Container image label -->
+        <mxCell id="ecr-ref" value="&lt;b&gt;ECR Image&lt;/b&gt;&lt;br/&gt;server:{git-sha}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff8e1;strokeColor=#ED7100;fontSize=9;" vertex="1" parent="ecs-task-box">
+          <mxGeometry x="290" y="30" width="130" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- SSE annotation -->
+        <mxCell id="sse-note" value="SSE: in-process pub/sub&lt;br/&gt;Map{userId, Set{Response}}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff8e1;strokeColor=#f57f17;fontSize=9;" vertex="1" parent="ecs-task-box">
+          <mxGeometry x="290" y="95" width="130" height="45" as="geometry" />
+        </mxCell>
+
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <!-- EXTERNAL — MongoDB Atlas Replica Set                            -->
+        <!-- ══════════════════════════════════════════════════════════════ -->
+
+        <!-- Atlas outer label -->
+        <mxCell id="atlas-box" value="MongoDB Atlas  ·  AWS ap-northeast-2&lt;br/&gt;PrivateLink (planned — Phase 3)" style="swimlane;html=1;startSize=30;fillColor=#e8f5e9;strokeColor=#2e7d32;fontStyle=1;fontSize=10;" vertex="1" parent="zone-external">
+          <mxGeometry x="20" y="80" width="250" height="380" as="geometry" />
+        </mxCell>
+
+        <!-- Replica Set label -->
+        <mxCell id="rs-label" value="Replica Set  rs0" style="text;html=1;strokeColor=none;fillColor=none;fontStyle=1;fontSize=11;align=center;" vertex="1" parent="atlas-box">
+          <mxGeometry x="50" y="35" width="150" height="22" as="geometry" />
+        </mxCell>
+
+        <!-- Primary -->
+        <mxCell id="rs-primary" value="&lt;b&gt;PRIMARY&lt;/b&gt;&lt;br/&gt;:27017&lt;br/&gt;reads + writes&lt;br/&gt;oplog source" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.documentdb;html=1;labelBackgroundColor=none;sketch=0;fontStyle=0;fontSize=9;fillColor=#00684A;strokeColor=none;fontColor=#ffffff;labelPosition=center;align=center;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="atlas-box">
+          <mxGeometry x="85" y="60" width="70" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Secondary 1 -->
+        <mxCell id="rs-secondary1" value="&lt;b&gt;SECONDARY&lt;/b&gt;&lt;br/&gt;:27017&lt;br/&gt;oplog replica" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.documentdb;html=1;labelBackgroundColor=none;sketch=0;fontStyle=0;fontSize=9;fillColor=#1a7a4a;strokeColor=none;fontColor=#ffffff;labelPosition=center;align=center;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="atlas-box">
+          <mxGeometry x="20" y="190" width="60" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Secondary 2 -->
+        <mxCell id="rs-secondary2" value="&lt;b&gt;SECONDARY&lt;/b&gt;&lt;br/&gt;:27017&lt;br/&gt;oplog replica" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.documentdb;html=1;labelBackgroundColor=none;sketch=0;fontStyle=0;fontSize=9;fillColor=#1a7a4a;strokeColor=none;fontColor=#ffffff;labelPosition=center;align=center;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="atlas-box">
+          <mxGeometry x="155" y="190" width="60" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- oplog arrows inside RS -->
+        <mxCell id="e-rs-p-s1" value="oplog" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#2e7d32;fontColor=#2e7d32;fontSize=8;" edge="1" source="rs-primary" target="rs-secondary1" parent="atlas-box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-rs-p-s2" value="oplog" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#2e7d32;fontColor=#2e7d32;fontSize=8;" edge="1" source="rs-primary" target="rs-secondary2" parent="atlas-box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Change Streams note -->
+        <mxCell id="cs-note" value="Change Streams require oplog&lt;br/&gt;→ Replica Set mandatory&lt;br/&gt;(standalone 불가)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#2e7d32;fontSize=9;" vertex="1" parent="atlas-box">
+          <mxGeometry x="20" y="310" width="210" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <!-- MANAGED SERVICES                                               -->
+        <!-- ══════════════════════════════════════════════════════════════ -->
+
+        <mxCell id="ecr" value="&lt;b&gt;Amazon ECR&lt;/b&gt;&lt;br/&gt;server:{sha}&lt;br/&gt;client:{sha}" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.ecr;html=1;labelBackgroundColor=none;sketch=0;fontStyle=1;fontSize=9;fillColor=#ED7100;strokeColor=none;fontColor=#ffffff;labelPosition=center;align=center;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="zone-mgmt">
+          <mxGeometry x="40" y="60" width="60" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ssm" value="&lt;b&gt;SSM Parameter Store&lt;/b&gt;&lt;br/&gt;MONGODB_URI (SecureString)&lt;br/&gt;JWT_SECRET (SecureString)" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.systems_manager_parameter_store;html=1;labelBackgroundColor=none;sketch=0;fontStyle=1;fontSize=9;fillColor=#E7157B;strokeColor=none;fontColor=#ffffff;labelPosition=center;align=center;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="zone-mgmt">
+          <mxGeometry x="250" y="60" width="60" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="cloudwatch" value="&lt;b&gt;CloudWatch&lt;/b&gt;&lt;br/&gt;Logs 30일 보존&lt;br/&gt;메트릭 · 알람" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.cloudwatch;html=1;labelBackgroundColor=none;sketch=0;fontStyle=1;fontSize=9;fillColor=#E7157B;strokeColor=none;fontColor=#ffffff;labelPosition=center;align=center;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="zone-mgmt">
+          <mxGeometry x="480" y="60" width="60" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="dynamo" value="&lt;b&gt;DynamoDB&lt;/b&gt;&lt;br/&gt;teacher-erp-tflock&lt;br/&gt;(Terraform state lock)" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.dynamodb;html=1;labelBackgroundColor=none;sketch=0;fontStyle=1;fontSize=9;fillColor=#3F8624;strokeColor=none;fontColor=#ffffff;labelPosition=center;align=center;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="zone-mgmt">
+          <mxGeometry x="700" y="60" width="60" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s3tfstate" value="&lt;b&gt;S3&lt;/b&gt;&lt;br/&gt;teacher-erp-tfstate&lt;br/&gt;(Terraform state)" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.s3;html=1;labelBackgroundColor=none;sketch=0;fontStyle=1;fontSize=9;fillColor=#3F8624;strokeColor=none;fontColor=#ffffff;labelPosition=center;align=center;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="zone-mgmt">
+          <mxGeometry x="840" y="60" width="60" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <!-- LEGEND                                                          -->
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <mxCell id="legend" value="&lt;b&gt;⚠ EKS 미사용&lt;/b&gt; — ECS Fargate 선택 이유:&lt;br/&gt;EKS 컨트롤 플레인 비용 $73/월 절감,&lt;br/&gt;쿠버네티스 운영 복잡도 제거.&lt;br/&gt;&lt;hr/&gt;&lt;b&gt;비용 (예상 ~$56–63/월)&lt;/b&gt;&lt;br/&gt;ECS Fargate Spot: ~$5–10&lt;br/&gt;ALB: ~$16  ·  NAT GW: ~$30&lt;br/&gt;CloudFront+S3: ~$1–3  ·  CW: ~$3&lt;br/&gt;&lt;hr/&gt;&lt;b&gt;개발 환경&lt;/b&gt;&lt;br/&gt;Docker Compose: mongo (single-node RS rs0)&lt;br/&gt;+ server :3001 + client :5173" style="text;html=1;strokeColor=#999;fillColor=#f5f5f5;align=left;verticalAlign=top;spacingLeft=8;spacingRight=8;overflow=hidden;fontSize=11;fontColor=#333;" vertex="1" parent="1">
+          <mxGeometry x="30" y="760" width="380" height="170" as="geometry" />
+        </mxCell>
+
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <!-- EDGES                                                           -->
+        <!-- ══════════════════════════════════════════════════════════════ -->
+
+        <!-- Browser → CloudFront -->
+        <mxCell id="e1" value="HTTPS" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#0066CC;fontColor=#0066CC;fontStyle=1;endArrow=block;endFill=1;" edge="1" source="browser" target="cloudfront" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- CloudFront → S3 -->
+        <mxCell id="e2" value="/* static" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#3F8624;fontColor=#3F8624;fontStyle=1;" edge="1" source="cloudfront" target="s3" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- CloudFront → ALB -->
+        <mxCell id="e3" value="/api/*" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#8C4FFF;fontColor=#8C4FFF;fontStyle=1;" edge="1" source="cloudfront" target="alb" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ACM → CloudFront -->
+        <mxCell id="e4" value="TLS cert" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#DD344C;fontColor=#DD344C;dashed=1;" edge="1" source="acm" target="cloudfront" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ALB → Express -->
+        <mxCell id="e5" value="HTTP :3001" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#e65100;fontColor=#e65100;fontStyle=1;" edge="1" source="alb" target="express" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Express → MongoDB Primary -->
+        <mxCell id="e6" value="TCP 27017&lt;br/&gt;Change Streams&lt;br/&gt;(PrivateLink)" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#00684A;fontColor=#00684A;fontStyle=1;" edge="1" source="express" target="rs-primary" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Express → SSM -->
+        <mxCell id="e7" value="fetch secrets" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#E7157B;fontColor=#E7157B;dashed=1;" edge="1" source="express" target="ssm" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Express → CloudWatch -->
+        <mxCell id="e8" value="logs / metrics" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#E7157B;fontColor=#E7157B;dashed=1;" edge="1" source="express" target="cloudwatch" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Express → NAT (outbound internet) -->
+        <mxCell id="e9" value="outbound" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#6c8ebf;dashed=1;" edge="1" source="express" target="nat" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- GitHub → GHA -->
+        <mxCell id="e10" value="push" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#82b366;" edge="1" source="github" target="gha" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- GHA → ECR -->
+        <mxCell id="e11" value="docker push" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#ED7100;fontColor=#ED7100;fontStyle=1;" edge="1" source="gha" target="ecr" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- GHA → S3 (static deploy) -->
+        <mxCell id="e12" value="s3 sync" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#3F8624;fontColor=#3F8624;fontStyle=1;" edge="1" source="gha" target="s3" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- GHA → CloudFront invalidate -->
+        <mxCell id="e13" value="invalidate" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#8C4FFF;fontColor=#8C4FFF;dashed=1;" edge="1" source="gha" target="cloudfront" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- GHA → ECS (update-service) -->
+        <mxCell id="e14" value="ecs update-service" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#e65100;fontColor=#e65100;fontStyle=1;" edge="1" source="gha" target="ecs-task-box" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ECR → ECS (pull image) -->
+        <mxCell id="e15" value="pull image" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#ED7100;fontColor=#ED7100;fontStyle=1;" edge="1" source="ecr" target="ecr-ref" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
