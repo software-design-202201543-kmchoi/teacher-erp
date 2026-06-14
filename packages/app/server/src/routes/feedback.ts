@@ -4,7 +4,7 @@ import type { IFeedback, IParentUser, FeedbackType, FeedbackVisibility } from "@
 import { authenticate } from "../middleware/authenticate.js"
 import { createNotification } from "../utils/createNotification.js"
 import { writeAuditLog } from "../utils/auditLog.js"
-import { FeedbackDoc } from "../models/feedback.js"
+import { FeedbackModel as FeedbackDoc } from "@teacher-erp/shared-db"
 
 const router = Router()
 

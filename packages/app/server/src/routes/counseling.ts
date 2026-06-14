@@ -4,7 +4,7 @@ import { demoUsersById } from "@teacher-erp/shared-utils"
 import { authenticate } from "../middleware/authenticate.js"
 import { writeAuditLog } from "../utils/auditLog.js"
 import { createNotification } from "../utils/createNotification.js"
-import { CounselingDoc } from "../models/counseling.js"
+import { CounselingRecordModel as CounselingDoc } from "@teacher-erp/shared-db"
 
 const router = Router()
 

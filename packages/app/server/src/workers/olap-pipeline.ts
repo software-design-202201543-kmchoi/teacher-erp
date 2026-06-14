@@ -35,8 +35,6 @@
  *   4. nightly backfill      — reconciles any missed events (setInterval 24h)
  */
 
-import mongoose, { Schema } from "mongoose"
-
 type ChangeEvent = {
   operationType: string
   fullDocument?: Record<string, unknown>
@@ -53,58 +51,17 @@ import type {
   SubjectProgressSummary,
   Trend,
 } from "@teacher-erp/shared-types"
-import { GradeDoc } from "../models/grade.js"
-import { FeedbackDoc } from "../models/feedback.js"
-import { CounselingDoc } from "../models/counseling.js"
+import {
+  GradeModel as GradeDoc,
+  FeedbackModel as FeedbackDoc,
+  CounselingRecordModel as CounselingDoc,
+  StudentLearningSnapshotModel as SnapshotModel,
+  SubjectProgressSummaryModel as SummaryModel,
+} from "@teacher-erp/shared-db"
 
-// ── Analytics Mongoose models ─────────────────────────────────────────────────
-
-const subjectScoreSchema = new Schema(
-  { subject_id: String, subject_name: String, score: Number, grade: String },
-  { _id: false },
-)
-
-const snapshotSchema = new Schema(
-  {
-    student_id: { type: String, required: true },
-    term: { type: String, required: true },
-    avg_score: { type: Number, default: 0 },
-    overall_grade: { type: String, default: "-" },
-    subject_scores: { type: [subjectScoreSchema], default: [] },
-    attendance_summary: { type: String, default: "-" },
-    feedback_count: { type: Number, default: 0 },
-    counseling_count: { type: Number, default: 0 },
-    snapshot_at: { type: Date },
-  },
-  { timestamps: false },
-)
-snapshotSchema.index({ student_id: 1, term: 1 }, { unique: true })
-
-const scoreHistorySchema = new Schema(
-  { term: String, score: Number, grade: String },
-  { _id: false },
-)
-
-const summarySchema = new Schema(
-  {
-    student_id: { type: String, required: true },
-    subject_id: { type: String, required: true },
-    score_history: { type: [scoreHistorySchema], default: [] },
-    avg_score: { type: Number, default: 0 },
-    trend: { type: String, enum: ["UP", "DOWN", "STABLE"], default: "STABLE" },
-    last_updated_at: { type: Date },
-  },
-  { timestamps: false },
-)
-summarySchema.index({ student_id: 1, subject_id: 1 }, { unique: true })
-
-const SnapshotModel =
-  (mongoose.models["StudentLearningSnapshot"] as mongoose.Model<StudentLearningSnapshot>) ??
-  mongoose.model<StudentLearningSnapshot>("StudentLearningSnapshot", snapshotSchema)
-
-const SummaryModel =
-  (mongoose.models["SubjectProgressSummary"] as mongoose.Model<SubjectProgressSummary>) ??
-  mongoose.model<SubjectProgressSummary>("SubjectProgressSummary", summarySchema)
+// Operational + analytics models are owned by @teacher-erp/shared-db (single
+// source of truth). The pipeline reads grades/feedback/counseling and writes the
+// snapshot/summary analytics collections — all keyed by string IDs.
 
 // ── ID context maps (used to reconstruct student context on delete events) ────
 // Change Streams for deletes only provide the document _id; these maps let us

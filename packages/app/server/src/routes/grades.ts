@@ -4,7 +4,7 @@ import type { IParentUser } from "@teacher-erp/shared-types"
 import { authenticate } from "../middleware/authenticate.js"
 import { createNotification } from "../utils/createNotification.js"
 import { writeAuditLog } from "../utils/auditLog.js"
-import { GradeDoc } from "../models/grade.js"
+import { GradeModel as GradeDoc } from "@teacher-erp/shared-db"
 
 const router = Router()
 

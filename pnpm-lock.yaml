@@ -193,6 +193,9 @@ importers:
       '@casl/mongoose':
         specifier: ^8.0.1
         version: 8.0.5(@casl/ability@6.8.0)(mongoose@8.23.0(socks@2.8.7))
+      '@teacher-erp/shared-types':
+        specifier: workspace:*
+        version: link:../types
       mongoose:
         specifier: ^8.3.0
         version: 8.23.0(socks@2.8.7)

@@ -2,9 +2,11 @@ import { Router } from "express"
 import { demoUsers } from "@teacher-erp/shared-utils"
 import type { IStudentUser } from "@teacher-erp/shared-types"
 import { authenticate } from "../middleware/authenticate.js"
-import { GradeDoc } from "../models/grade.js"
-import { FeedbackDoc } from "../models/feedback.js"
-import { CounselingDoc } from "../models/counseling.js"
+import {
+  GradeModel as GradeDoc,
+  FeedbackModel as FeedbackDoc,
+  CounselingRecordModel as CounselingDoc,
+} from "@teacher-erp/shared-db"
 
 const router = Router()
 

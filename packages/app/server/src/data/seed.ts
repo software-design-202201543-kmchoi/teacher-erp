@@ -1,7 +1,9 @@
 import { demoGrades, demoFeedback, demoCounseling } from "@teacher-erp/shared-utils"
-import { GradeDoc } from "../models/grade.js"
-import { FeedbackDoc } from "../models/feedback.js"
-import { CounselingDoc } from "../models/counseling.js"
+import {
+  GradeModel as GradeDoc,
+  FeedbackModel as FeedbackDoc,
+  CounselingRecordModel as CounselingDoc,
+} from "@teacher-erp/shared-db"
 
 export async function seedDatabase(): Promise<void> {
   await Promise.all([
